@@ -5,6 +5,7 @@ PWA en español para registrar entrenamientos y peso corporal desde móvil y ord
 ## Primera versión
 
 - Rutinas A/B/C/Brazos basadas en los objetivos del bloque 7; sesiones nuevas con resultados vacíos.
+- Siguiente sesión preparada automáticamente: A → B → C → Brazos → A de la siguiente semana. Una sesión abierta se retoma sin avanzar; el bloque se cambia manualmente.
 - Registro de carga, repeticiones, RIR exacto o intervalo, intento fallido y parciales.
 - Resultados comunes o separados por lado, series extra, notas y equipo.
 - Guardado automático en IndexedDB; terminar una sesión no rellena las series pendientes con cero.

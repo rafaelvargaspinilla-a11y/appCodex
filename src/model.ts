@@ -10,6 +10,17 @@ const dumbbell = 'kg por mancuerna';
 const machine = 'kg indicados en la máquina';
 const added = 'kg añadidos';
 export const days: Day[] = ['A', 'B', 'C', 'Brazos'];
+export type SessionPosition = { block: number; week: number; day: Day };
+// Resume an unfinished session; advance only when it is explicitly finished.
+// Logical routine order keeps edits to older sessions from rewinding progress.
+export function suggestedSession(data: Data): SessionPosition {
+  const latest = [...data.sessions].sort((a, b) =>
+    b.block - a.block || b.week - a.week || days.indexOf(b.day) - days.indexOf(a.day))[0];
+  if (!latest) return { block: 7, week: 6, day: 'A' };
+  if (!latest.finished) return { block: latest.block, week: latest.week, day: latest.day };
+  const index = days.indexOf(latest.day);
+  return { block: latest.block, week: latest.week + (index === days.length - 1 ? 1 : 0), day: days[(index + 1) % days.length] };
+}
 export const routines: Record<Day, Template[]> = {
   A: [
     ['Elevaciones laterales', ['8–10', '8–10'], false, dumbbell],

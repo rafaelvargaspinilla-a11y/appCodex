@@ -28,6 +28,8 @@ test('registra lados, RIR incierto y peso; conserva resultados al recargar', asy
   await expect(page.getByRole('spinbutton', { name: 'Elevaciones laterales serie 2  repeticiones', exact: true })).toHaveValue('');
   await page.getByRole('button', { name: 'Terminar sesión', exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Terminar sesión', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'DÍA B B 7 ejercicios' })).toHaveAttribute('aria-pressed', 'true');
+  await menu(page, 'Historial').click();
   await expect(page.locator('.history-row')).toContainText('2 de 14 series');
   await menu(page, 'Peso corporal').or(menu(page, 'Peso')).click();
   await page.getByRole('spinbutton', { name: 'Peso corporal (kg)' }).fill('78.5');
@@ -78,4 +80,38 @@ test('exporta y restaura una copia; rechaza datos dañados', async ({ page }) =>
   await page.reload();
   await page.getByRole('button', { name: 'Día A · B7 / S6' }).click();
   await expect(page.getByRole('spinbutton', { name: 'Elevaciones laterales serie 1  repeticiones', exact: true })).toHaveValue('12');
+});
+
+
+test('avanza A, B, C, Brazos y después incrementa la semana; persiste y permite cambios manuales', async ({ page }) => {
+  await page.goto('./');
+  const expected = ['B', 'C', 'Brazos', 'A'];
+  for (const next of expected) {
+    await page.getByRole('button', { name: 'Empezar entrenamiento' }).click();
+    await page.getByRole('button', { name: 'Terminar sesión', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Terminar sesión', exact: true }).click();
+    await saved(page);
+    await expect(page.locator('.day-card.chosen strong')).toHaveText(next);
+    await expect(page.getByRole('spinbutton', { name: 'Semana', exact: true })).toHaveValue(next === 'A' ? '7' : '6');
+  }
+  await page.reload();
+  await expect(page.locator('.day-card.chosen strong')).toHaveText('A');
+  await expect(page.getByRole('spinbutton', { name: 'Semana', exact: true })).toHaveValue('7');
+  await expect(page.getByRole('spinbutton', { name: 'Bloque', exact: true })).toHaveValue('7');
+  await page.locator('.day-card').filter({ has: page.getByText('C', { exact: true }) }).click();
+  await page.getByRole('spinbutton', { name: 'Semana', exact: true }).fill('9');
+  await page.getByRole('button', { name: 'Empezar entrenamiento' }).click();
+  await saved(page);
+  await page.reload();
+  await expect(page.locator('.day-card.chosen strong')).toHaveText('C');
+  await expect(page.getByRole('spinbutton', { name: 'Semana', exact: true })).toHaveValue('9');
+  await page.getByRole('button', { name: 'Empezar entrenamiento' }).click();
+  await expect(page.locator('.session-banner')).toContainText('Semana 9');
+  // Opening an older completed session does not change the proposed next session.
+  await menu(page, 'Historial').click();
+  await page.locator('.history-row').filter({ hasText: 'Día A' }).click();
+  await page.getByRole('button', { name: 'Terminar sesión', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Terminar sesión', exact: true }).click();
+  await expect(page.locator('.day-card.chosen strong')).toHaveText('C');
+  await expect(page.getByRole('spinbutton', { name: 'Semana', exact: true })).toHaveValue('9');
 });
