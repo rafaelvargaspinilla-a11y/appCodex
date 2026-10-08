@@ -72,3 +72,7 @@ La referencia inicial fija es B7/S5 = semana del 5 al 11 de octubre de 2026, seg
 La extracción conserva la fuente y usa únicamente series normales inequívocas. Objetivos, comentarios, clusters y etapas de dropset no se tratan como series normales. Las repeticiones aproximadas y las exclusiones confirmadas no generan récords. Cargas omitidas heredan solo dentro del mismo ejercicio de una sesión. Los valores sin carga se muestran como carga desconocida. No se suman lados ni parciales. Mancuernas, cargas añadidas, unidades y variantes se separan; las máquinas históricas desconocidas se presentan por bloque, con su incertidumbre visible, y no se unen al equipo nuevo. La sección de revisión conserva entradas excluidas y extracciones parciales.
 
 La constancia cuenta días completados únicos por bloque/semana con objetivo A, B, C y Brazos. Conserva semanas vacías y excluye sesiones abiertas. El porcentaje de semanas completas no penaliza la semana actual mientras está en curso.
+
+### Actualizaciones
+
+La app muestra **Actualizar app** cuando una nueva versión está lista. Este botón se habilita después de guardar los cambios locales y conserva IndexedDB. En **Mis datos → Buscar actualización** se puede comprobar manualmente; también se comprueba al regresar a la app y cada hora con conexión. Una instalación de una versión anterior sin este aviso debe cerrar todas las pestañas y ventanas de la app y volver a abrir tras finalizar GitHub Actions. No borrar los datos del sitio para actualizar.
