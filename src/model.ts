@@ -1,3 +1,4 @@
+import type { CalendarConfig } from './statistics';
 import { historicalSessions, parseHistory, type HistoryArchive } from './history';
 export type Day = 'A' | 'B' | 'C' | 'Brazos';
 export type Result = { weight: number | null; reps: number | null; rir: string; failure: boolean; partials: number | null };
@@ -5,7 +6,7 @@ export type SetRecord = { id: string; goal: string; targetRir: number; done: boo
 export type Exercise = { id: string; name: string; unilateral: boolean; loadLabel: string; equipment: string; notes: string; sets: SetRecord[] };
 export type Session = { id: string; block: number; week: number; day: Day; date: string; createdAt: string; finished: boolean; exercises: Exercise[] };
 export type BodyWeight = { id: string; date: string; kg: number; note: string };
-export type Data = { version: 1; sessions: Session[]; weights: BodyWeight[]; history?: HistoryArchive };
+export type Data = { version: 1; sessions: Session[]; weights: BodyWeight[]; history?: HistoryArchive; calendar?: CalendarConfig };
 type Template = [string, string[], boolean?, string?];
 const dumbbell = 'kg por mancuerna';
 const machine = 'kg indicados en la máquina';
@@ -131,5 +132,11 @@ export function parseBackup(text: string): Data {
     ids.add(w.id);
   }
   if (d.history !== undefined) d.history = parseHistory(d.history);
+  if (d.calendar !== undefined) {
+    const c = d.calendar;
+    if (!c || !date(c.anchorDate) || !Number.isInteger(c.block) || c.block < 1 || c.block > 100 ||
+      !Number.isInteger(c.week) || c.week < 1 || c.week > 104 || !c.lengths || typeof c.lengths !== 'object' || Array.isArray(c.lengths) ||
+      Object.entries(c.lengths).some(([key, value]) => !/^[1-9]\d?$/.test(key) || typeof value !== 'number' || !Number.isInteger(value) || value < 1 || value > 104)) fail();
+  }
   return d as Data;
 }

@@ -60,4 +60,15 @@ Consulta [docs/PUBLICACION.md](docs/PUBLICACION.md) para activar GitHub Pages. E
 
 En **Mis datos → Importar histórico**, selecciona juntos los archivos TXT originales de tus bloques, o un JSON con formato `beast-log-history`, versión `1` y una lista `files` de objetos `{name, text}`. Cada texto contiene un bloque con encabezados `Bloque N`, `Semana N`, `Dia A/B/C` o `Brazos`. La importación conserva los originales, añade bloques sin borrar sesiones actuales y evita duplicados. Los bloques con contenido distinto se rechazan sin modificar datos.
 
-El Historial permite filtrar y buscar las anotaciones completas. No se inventan fechas ni sesiones ausentes. El histórico participa en la propuesta del siguiente día, pero sus series libres todavía no se convierten en estadísticas ni cargas automáticas. Las copias de seguridad incluyen todos los originales. Los archivos personales no se publican ni se incluyen en el repositorio.
+El Historial permite filtrar y buscar las anotaciones completas. No se inventan fechas ni sesiones ausentes. El histórico participa en la propuesta del siguiente día y en las estadísticas de las series que se pueden interpretar sin ambigüedad. No precarga cargas automáticamente. Las copias de seguridad incluyen todos los originales. Los archivos personales no se publican ni se incluyen en el repositorio.
+
+
+### Progreso y calendario
+
+**Progreso** muestra récords de carga con sus repeticiones y RIR, mejores series por peso, gráficos semanales de carga y de repeticiones a carga fija, comparación con las últimas cuatro semanas y constancia en entrenamientos. Los gráficos permiten consultar cada punto. No hay estadística de diferencias entre lados.
+
+La referencia inicial fija es B7/S5 = semana del 5 al 11 de octubre de 2026, según la indicación del usuario. Las fechas históricas son rangos semanales estimados; no se inventa el día de cada sesión. La duración inicial de un bloque es la última semana anotada, incluyendo huecos internos. La referencia y duraciones se pueden corregir en Progreso y viajan en las copias de seguridad. Una visita posterior no desplaza las fechas.
+
+La extracción conserva la fuente y usa únicamente series normales inequívocas. Objetivos, comentarios, clusters y etapas de dropset no se tratan como series normales. Las repeticiones aproximadas y las exclusiones confirmadas no generan récords. Cargas omitidas heredan solo dentro del mismo ejercicio de una sesión. Los valores sin carga se muestran como carga desconocida. No se suman lados ni parciales. Mancuernas, cargas añadidas, unidades y variantes se separan; las máquinas históricas desconocidas se presentan por bloque, con su incertidumbre visible, y no se unen al equipo nuevo. La sección de revisión conserva entradas excluidas y extracciones parciales.
+
+La constancia cuenta días completados únicos por bloque/semana con objetivo A, B, C y Brazos. Conserva semanas vacías y excluye sesiones abiertas. El porcentaje de semanas completas no penaliza la semana actual mientras está en curso.
