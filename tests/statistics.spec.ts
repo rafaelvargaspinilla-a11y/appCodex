@@ -81,3 +81,28 @@ test('muestra marcas, evolución y constancia y guarda el calendario en las copi
   await menu(page,'Progreso').click();await expect(page.getByLabel('Fecha dentro de la semana de referencia')).toHaveValue('2026-10-12');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
 });
+
+test('vista general combina bloques y permite filtrar sin mezclar unidades ni unir equipos',async({page})=>{
+  await page.goto('./');await menu(page,'Mis datos').click();
+  const archive={format:'beast-log-history',version:1,files:[
+    {name:'block1.txt',text:'Bloque 1\nSemana 1\nDia A\n1. Femoral sentado -> 20kg 10(+0)\n2. Jalón unilateral -> 30lbs 8(+0)'},
+    {name:'block7.txt',text:'Bloque 7\nSemana 5\nDia A\n1. Femoral sentado -> 30kg 8(+0)\n2. Jalón unilateral -> 25kg 8(+0)'}
+  ]};
+  await page.getByTestId('history-file').setInputFiles({name:'all.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(archive))});
+  await menu(page,'Progreso').click();await page.getByLabel('Ejercicio',{exact:true}).selectOption('Curl femoral sentado');
+  await expect(page.getByLabel('Periodo',{exact:true})).toHaveValue('');
+  await expect(page.locator('.stats-cards').first()).toContainText('30 kg × 8');
+  await expect(page.locator('.stat-chart').first().locator('circle')).toHaveCount(2);
+  await expect(page.locator('.stat-chart').first().locator('polyline')).toHaveCount(2);
+  await expect(page.getByRole('heading',{name:'Marcas de todo tu historial'})).toBeVisible();
+  await page.getByLabel('Periodo',{exact:true}).selectOption('1');
+  await expect(page.locator('.stats-cards').first()).toContainText('20 kg × 10');
+  await expect(page.locator('.stat-chart').first().locator('circle')).toHaveCount(1);
+  await page.getByLabel('Periodo',{exact:true}).selectOption('');
+  await page.getByLabel('Ejercicio',{exact:true}).selectOption('Jalón unilateral');
+  const selector=page.getByLabel('Variante, equipo y unidad',{exact:true});
+  const generalOptions=await selector.locator('option').allTextContents();
+  expect(generalOptions.filter(t=>t.includes('General')).length).toBe(2);
+  await expect(page.locator('.stat-chart').first().locator('circle')).toHaveCount(1);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+});
