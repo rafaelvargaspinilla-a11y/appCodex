@@ -1,10 +1,11 @@
+import { historicalSessions, parseHistory, type HistoryArchive } from './history';
 export type Day = 'A' | 'B' | 'C' | 'Brazos';
 export type Result = { weight: number | null; reps: number | null; rir: string; failure: boolean; partials: number | null };
 export type SetRecord = { id: string; goal: string; targetRir: number; done: boolean; split: boolean; left: Result; right: Result };
 export type Exercise = { id: string; name: string; unilateral: boolean; loadLabel: string; equipment: string; notes: string; sets: SetRecord[] };
 export type Session = { id: string; block: number; week: number; day: Day; date: string; createdAt: string; finished: boolean; exercises: Exercise[] };
 export type BodyWeight = { id: string; date: string; kg: number; note: string };
-export type Data = { version: 1; sessions: Session[]; weights: BodyWeight[] };
+export type Data = { version: 1; sessions: Session[]; weights: BodyWeight[]; history?: HistoryArchive };
 type Template = [string, string[], boolean?, string?];
 const dumbbell = 'kg por mancuerna';
 const machine = 'kg indicados en la máquina';
@@ -14,7 +15,7 @@ export type SessionPosition = { block: number; week: number; day: Day };
 // Resume an unfinished session; advance only when it is explicitly finished.
 // Logical routine order keeps edits to older sessions from rewinding progress.
 export function suggestedSession(data: Data): SessionPosition {
-  const latest = [...data.sessions].sort((a, b) =>
+  const latest = [...data.sessions, ...historicalSessions(data.history).map(s => ({ ...s, finished: true }))].sort((a, b) =>
     b.block - a.block || b.week - a.week || days.indexOf(b.day) - days.indexOf(a.day))[0];
   if (!latest) return { block: 7, week: 6, day: 'A' };
   if (!latest.finished) return { block: latest.block, week: latest.week, day: latest.day };
@@ -129,5 +130,6 @@ export function parseBackup(text: string): Data {
       w.kg <= 0 || !str(w.note)) fail();
     ids.add(w.id);
   }
+  if (d.history !== undefined) d.history = parseHistory(d.history);
   return d as Data;
 }

@@ -71,9 +71,9 @@ test('exporta y restaura una copia; rechaza datos dañados', async ({ page }) =>
   const download = await waiting;
   const path = await download.path();
   expect(path).toBeTruthy();
-  await page.locator('input[type=file]').setInputFiles({ name: 'mala.json', mimeType: 'application/json', buffer: Buffer.from('{"version":1,"sessions":[{}],"weights":[]}') });
+  await page.getByTestId('backup-file').setInputFiles({ name: 'mala.json', mimeType: 'application/json', buffer: Buffer.from('{"version":1,"sessions":[{}],"weights":[]}') });
   await expect(page.getByRole('alert')).toContainText('formato válido');
-  await page.locator('input[type=file]').setInputFiles(path!);
+  await page.getByTestId('backup-file').setInputFiles(path!);
   await expect(page.getByRole('dialog')).toContainText('1 sesiones');
   await page.getByRole('button', { name: 'Guardar copia y restaurar' }).click();
   await expect(page.getByRole('alert')).toContainText('Copia restaurada');
@@ -114,4 +114,35 @@ test('avanza A, B, C, Brazos y después incrementa la semana; persiste y permite
   await page.getByRole('dialog').getByRole('button', { name: 'Terminar sesión', exact: true }).click();
   await expect(page.locator('.day-card.chosen strong')).toHaveText('C');
   await expect(page.getByRole('spinbutton', { name: 'Semana', exact: true })).toHaveValue('9');
+});
+
+test('importa histórico sin duplicar ni borrar sesiones y lo conserva en copias', async ({ page }) => {
+  await page.goto('./');
+  const archive = { format: 'beast-log-history', version: 1, files: [{ name: 'bloque.txt', text: 'Bloque 7\nSemana 5\nDia B\n1. Remo -> 30kg 8(+0)\n' }] };
+  const file = { name: 'historico.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(archive)) };
+  await menu(page, 'Mis datos').click();
+  await page.getByTestId('history-file').setInputFiles(file);
+  await expect(page.locator('.archive-panel')).toContainText('1 sesiones');
+  await page.locator('.archive-session summary').click();
+  await expect(page.locator('.archive-line')).toContainText('30kg 8(+0)');
+  await page.reload();
+  await expect(page.locator('.day-card.chosen strong')).toHaveText('C');
+  await expect(page.getByRole('spinbutton', { name: 'Semana', exact: true })).toHaveValue('5');
+  await page.getByRole('button', { name: 'Empezar entrenamiento' }).click();
+  await saved(page);
+  await menu(page, 'Mis datos').click();
+  await page.getByTestId('history-file').setInputFiles(file);
+  await expect(page.locator('.archive-panel')).toContainText('1 sesiones');
+  await expect(page.locator('.history-row')).toHaveCount(1);
+  await menu(page, 'Mis datos').click();
+  const waiting = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Exportar mis datos' }).click();
+  const path = await (await waiting).path();
+  await page.getByTestId('backup-file').setInputFiles(path!);
+  await expect(page.getByRole('dialog')).toContainText('1 sesiones históricas');
+  await page.getByRole('button', { name: 'Guardar copia y restaurar' }).click();
+  await expect(page.getByRole('alert')).toContainText('Copia restaurada');
+  await menu(page, 'Historial').click();
+  await expect(page.locator('.archive-session')).toHaveCount(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
 });

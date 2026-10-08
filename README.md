@@ -55,3 +55,9 @@ La carga es numérica y se muestra en kg para registros nuevos. La importación 
 ## Publicación
 
 Consulta [docs/PUBLICACION.md](docs/PUBLICACION.md) para activar GitHub Pages. El flujo de Actions publica solo la compilación estática, bajo `/appCodex/`. Los originales y documentos personales permanecen únicamente en el entorno local y están excluidos de Git.
+
+### Importar histórico privado
+
+En **Mis datos → Importar histórico**, selecciona un JSON con formato `beast-log-history`, versión `1` y una lista `files` de objetos `{name, text}`. Cada texto contiene un bloque con encabezados `Bloque N`, `Semana N`, `Dia A/B/C` o `Brazos`. La importación conserva los originales, añade bloques sin borrar sesiones actuales y evita duplicados. Los bloques con contenido distinto se rechazan sin modificar datos.
+
+El Historial permite filtrar y buscar las anotaciones completas. No se inventan fechas ni sesiones ausentes. El histórico participa en la propuesta del siguiente día, pero sus series libres todavía no se convierten en estadísticas ni cargas automáticas. Las copias de seguridad incluyen todos los originales. Los archivos personales no se publican ni se incluyen en el repositorio.
