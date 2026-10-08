@@ -1,0 +1,11 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+*.log
+.env*
+!.env.example
+# Local personal records; never publish alongside application source.
+/docs/sources/
+/docs/CONTEXTO.md
+/docs/inventario-fuentes.json

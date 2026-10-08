@@ -1,0 +1,81 @@
+import { test, expect } from '@playwright/test';
+
+const menu = (page: import('@playwright/test').Page, label: string) => page.locator('.sidebar:visible nav, .mobile-nav:visible').getByRole('button', { name: label, exact: true });
+const saved = async (page: import('@playwright/test').Page) => { await expect(page.getByRole('status')).toContainText('Guardado en este dispositivo'); };
+
+test('registra lados, RIR incierto y peso; conserva resultados al recargar', async ({ page }) => {
+  await page.goto('./');
+  await page.getByRole('button', { name: 'Empezar entrenamiento' }).click();
+  const first = page.locator('.exercise-card').first();
+  await first.getByRole('button', { name: 'Completar Elevaciones laterales serie 1', exact: true }).click();
+  await expect(first.getByRole('alert')).toContainText('Anota las repeticiones');
+  await first.getByRole('spinbutton', { name: 'Elevaciones laterales serie 1  carga', exact: true }).fill('16');
+  await first.getByRole('spinbutton', { name: 'Elevaciones laterales serie 1  repeticiones', exact: true }).fill('9');
+  await first.getByRole('combobox', { name: 'Elevaciones laterales serie 1  RIR', exact: true }).selectOption('0–1');
+  await first.getByRole('spinbutton', { name: 'Elevaciones laterales serie 1  parciales', exact: true }).fill('1');
+  await first.getByRole('button', { name: 'Completar Elevaciones laterales serie 1', exact: true }).click();
+  const unilateral = page.locator('.exercise-card').nth(2);
+  await unilateral.getByLabel('Diferenciar lados').first().check();
+  await unilateral.getByRole('spinbutton', { name: 'Remo con mancuerna serie 1 Izquierda repeticiones', exact: true }).fill('8');
+  await unilateral.getByRole('spinbutton', { name: 'Remo con mancuerna serie 1 Derecha repeticiones', exact: true }).fill('7');
+  await unilateral.getByRole('button', { name: 'Completar Remo con mancuerna serie 1', exact: true }).click();
+  await saved(page);
+  await page.reload();
+  await page.getByRole('button', { name: 'Día A · B7 / S6' }).click();
+  await expect(page.getByRole('spinbutton', { name: 'Elevaciones laterales serie 1  repeticiones', exact: true })).toHaveValue('9');
+  await expect(page.getByRole('combobox', { name: 'Elevaciones laterales serie 1  RIR', exact: true })).toHaveValue('0–1');
+  await expect(page.getByRole('spinbutton', { name: 'Remo con mancuerna serie 1 Derecha repeticiones', exact: true })).toHaveValue('7');
+  await expect(page.getByRole('spinbutton', { name: 'Elevaciones laterales serie 2  repeticiones', exact: true })).toHaveValue('');
+  await page.getByRole('button', { name: 'Terminar sesión', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Terminar sesión', exact: true }).click();
+  await expect(page.locator('.history-row')).toContainText('2 de 14 series');
+  await menu(page, 'Peso corporal').or(menu(page, 'Peso')).click();
+  await page.getByRole('spinbutton', { name: 'Peso corporal (kg)' }).fill('78.5');
+  await page.getByRole('button', { name: 'Guardar peso' }).click();
+  await saved(page);
+  await expect(page.locator('.weight-row')).toContainText('78,5');
+  await page.reload();
+  await menu(page, 'Peso corporal').or(menu(page, 'Peso')).click();
+  await expect(page.locator('.weight-row')).toContainText('78,5');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+});
+
+test('PWA carga y permite guardar sin conexión', async ({ page, context }) => {
+  await page.goto('./');
+  await page.evaluate(async () => { await navigator.serviceWorker.ready; });
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Empezar entrenamiento' })).toBeVisible();
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Hoy toca superar ayer.' })).toBeVisible();
+  await page.getByRole('button', { name: 'Empezar entrenamiento' }).click();
+  await page.getByRole('spinbutton', { name: 'Elevaciones laterales serie 1  repeticiones', exact: true }).fill('10');
+  await page.getByRole('button', { name: 'Completar Elevaciones laterales serie 1', exact: true }).click();
+  await saved(page);
+  await page.reload();
+  await page.getByRole('button', { name: 'Día A · B7 / S6' }).click();
+  await expect(page.getByRole('spinbutton', { name: 'Elevaciones laterales serie 1  repeticiones', exact: true })).toHaveValue('10');
+});
+
+test('exporta y restaura una copia; rechaza datos dañados', async ({ page }) => {
+  await page.goto('./');
+  await page.getByRole('button', { name: 'Empezar entrenamiento' }).click();
+  await page.getByRole('spinbutton', { name: 'Elevaciones laterales serie 1  repeticiones', exact: true }).fill('12');
+  await page.getByRole('button', { name: 'Completar Elevaciones laterales serie 1', exact: true }).click();
+  await saved(page);
+  await menu(page, 'Mis datos').click();
+  const waiting = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Exportar mis datos' }).click();
+  const download = await waiting;
+  const path = await download.path();
+  expect(path).toBeTruthy();
+  await page.locator('input[type=file]').setInputFiles({ name: 'mala.json', mimeType: 'application/json', buffer: Buffer.from('{"version":1,"sessions":[{}],"weights":[]}') });
+  await expect(page.getByRole('alert')).toContainText('formato válido');
+  await page.locator('input[type=file]').setInputFiles(path!);
+  await expect(page.getByRole('dialog')).toContainText('1 sesiones');
+  await page.getByRole('button', { name: 'Guardar copia y restaurar' }).click();
+  await expect(page.getByRole('alert')).toContainText('Copia restaurada');
+  await page.reload();
+  await page.getByRole('button', { name: 'Día A · B7 / S6' }).click();
+  await expect(page.getByRole('spinbutton', { name: 'Elevaciones laterales serie 1  repeticiones', exact: true })).toHaveValue('12');
+});
