@@ -78,3 +78,14 @@ La constancia cuenta días completados únicos por bloque/semana con objetivo A,
 La app muestra **Actualizar app** cuando una nueva versión está lista. Este botón se habilita después de guardar los cambios locales y conserva IndexedDB. En **Mis datos → Buscar actualización** se puede comprobar manualmente; también se comprueba al regresar a la app y cada hora con conexión. Una instalación de una versión anterior sin este aviso debe cerrar todas las pestañas y ventanas de la app y volver a abrir tras finalizar GitHub Actions. No borrar los datos del sitio para actualizar.
 
 La vista inicial de Progreso es **Todo mi historial**. El selector **Periodo** filtra opcionalmente un bloque y afecta a las marcas, gráficas y constancia. La tabla general presenta una marca por ejercicio, unidad y convención de carga en vez de repetirla por bloque. No se calcula una diferencia de carga entre récord y resultado reciente si corresponden a equipos distintos.
+
+
+### Importación directa de Excel
+
+En **Mis datos** o **Peso corporal → Importar Excel**, selecciona los originales «Bloque N…xlsx». La vista previa indica pesos nuevos, repetidos y diferentes para la misma fecha. Por defecto conserva los valores existentes; se puede elegir explícitamente un valor del Excel. Cancelar no cambia datos. Volver a importar los mismos archivos no duplica pesajes ni originales.
+
+Solo las filas diarias de las hojas «Datos S1 - S4», «Datos S5 - S8» y «Datos S9 - S12» aportan pesajes. Las medias semanales, pesos iniciales, errores de fórmula y plantillas futuras no se importan como pesajes. Los valores vacíos no se rellenan con cero. Los XLSX se leen en el navegador con `read-excel-file` y se guardan íntegros en IndexedDB, incluidos dietas, rutinas y notas, junto con un SHA-256. Las copias JSON incluyen esos originales. No se publican archivos personales en el repositorio ni se envían a un servicio externo.
+
+Las semanas reales del Excel pueden sustituir el calendario estimado, conservando los huecos. Solo una coincidencia única de bloque/semana/día permite asignar una fecha exacta a una sesión TXT; varias fechas se señalan para revisión. Las rutinas prescritas no generan resultados. Los días de entrenamiento registrados en Excel se reúnen con los TXT y sesiones nuevas por bloque/semana/día para evitar contar dos veces el mismo entrenamiento. Los días extra del Excel sin series se muestran como registros sin resultados en Historial.
+
+El inicio conserva el total de sesiones terminadas y muestra en lugar de series registradas las sesiones terminadas del bloque seleccionado. Se retiraron las tarjetas «En tu diario» y «Un poco mejor. Una vez más.». Queda pendiente diseñar una nueva propuesta motivacional. Las sesiones abiertas se retoman mediante **Empezar entrenamiento**; el avance A → B → C → Brazos sigue vigente.

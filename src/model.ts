@@ -1,12 +1,14 @@
+import { validateExcel, type ExcelArchive } from './excel';
+import { trainingPositions } from './completed';
 import type { CalendarConfig } from './statistics';
-import { historicalSessions, parseHistory, type HistoryArchive } from './history';
+import { parseHistory, type HistoryArchive } from './history';
 export type Day = 'A' | 'B' | 'C' | 'Brazos';
 export type Result = { weight: number | null; reps: number | null; rir: string; failure: boolean; partials: number | null };
 export type SetRecord = { id: string; goal: string; targetRir: number; done: boolean; split: boolean; left: Result; right: Result };
 export type Exercise = { id: string; name: string; unilateral: boolean; loadLabel: string; equipment: string; notes: string; sets: SetRecord[] };
 export type Session = { id: string; block: number; week: number; day: Day; date: string; createdAt: string; finished: boolean; exercises: Exercise[] };
 export type BodyWeight = { id: string; date: string; kg: number; note: string };
-export type Data = { version: 1; sessions: Session[]; weights: BodyWeight[]; history?: HistoryArchive; calendar?: CalendarConfig };
+export type Data = { version: 1; sessions: Session[]; weights: BodyWeight[]; history?: HistoryArchive; calendar?: CalendarConfig; excel?: ExcelArchive; excelCalendar?: boolean };
 type Template = [string, string[], boolean?, string?];
 const dumbbell = 'kg por mancuerna';
 const machine = 'kg indicados en la máquina';
@@ -16,10 +18,11 @@ export type SessionPosition = { block: number; week: number; day: Day };
 // Resume an unfinished session; advance only when it is explicitly finished.
 // Logical routine order keeps edits to older sessions from rewinding progress.
 export function suggestedSession(data: Data): SessionPosition {
-  const latest = [...data.sessions, ...historicalSessions(data.history).map(s => ({ ...s, finished: true }))].sort((a, b) =>
+  const latest = trainingPositions(data).sort((a, b) =>
     b.block - a.block || b.week - a.week || days.indexOf(b.day) - days.indexOf(a.day))[0];
   if (!latest) return { block: 7, week: 6, day: 'A' };
-  if (!latest.finished) return { block: latest.block, week: latest.week, day: latest.day };
+  const open = data.sessions.find(s => !s.finished && s.block === latest.block && s.week === latest.week && s.day === latest.day);
+  if (open || !latest.finished) return { block: latest.block, week: latest.week, day: latest.day };
   const index = days.indexOf(latest.day);
   return { block: latest.block, week: latest.week + (index === days.length - 1 ? 1 : 0), day: days[(index + 1) % days.length] };
 }
@@ -138,5 +141,8 @@ export function parseBackup(text: string): Data {
       !Number.isInteger(c.week) || c.week < 1 || c.week > 104 || !c.lengths || typeof c.lengths !== 'object' || Array.isArray(c.lengths) ||
       Object.entries(c.lengths).some(([key, value]) => !/^[1-9]\d?$/.test(key) || typeof value !== 'number' || !Number.isInteger(value) || value < 1 || value > 104)) fail();
   }
+  if (d.calendar?.weeks !== undefined && (!d.calendar.weeks || typeof d.calendar.weeks !== 'object' || Array.isArray(d.calendar.weeks) || Object.entries(d.calendar.weeks).some(([key,value]) => !/^[1-9]\d?:[1-9]\d{0,2}$/.test(key) || !date(value)))) fail();
+  if (d.excel !== undefined) d.excel = validateExcel(d.excel);
+  if (d.excelCalendar !== undefined && typeof d.excelCalendar !== 'boolean') fail();
   return d as Data;
 }

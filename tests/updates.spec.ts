@@ -36,7 +36,7 @@ test('detecta una nueva versión, permite instalarla y conserva las sesiones', a
     await expect(page.getByRole('button',{name:'Actualizar app',exact:true})).toBeVisible({timeout:15000});
     await page.getByRole('button',{name:'Actualizar app',exact:true}).click();
     await expect(page.locator('.update-notice')).toHaveCount(0);
-    await page.getByRole('button',{name:'Día A · B7 / S6',exact:true}).click();
+    await page.getByRole('button',{name:'Empezar entrenamiento',exact:true}).click();
     await expect(page.getByRole('spinbutton',{name:'Elevaciones laterales serie 1  repeticiones',exact:true})).toHaveValue('9');
   } finally { server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r())); }
 });

@@ -21,7 +21,7 @@ test('registra lados, RIR incierto y peso; conserva resultados al recargar', asy
   await unilateral.getByRole('button', { name: 'Completar Remo con mancuerna serie 1', exact: true }).click();
   await saved(page);
   await page.reload();
-  await page.getByRole('button', { name: 'Día A · B7 / S6' }).click();
+  await page.getByRole('button', { name: 'Empezar entrenamiento' }).click();
   await expect(page.getByRole('spinbutton', { name: 'Elevaciones laterales serie 1  repeticiones', exact: true })).toHaveValue('9');
   await expect(page.getByRole('combobox', { name: 'Elevaciones laterales serie 1  RIR', exact: true })).toHaveValue('0–1');
   await expect(page.getByRole('spinbutton', { name: 'Remo con mancuerna serie 1 Derecha repeticiones', exact: true })).toHaveValue('7');
@@ -55,7 +55,7 @@ test('PWA carga y permite guardar sin conexión', async ({ page, context }) => {
   await page.getByRole('button', { name: 'Completar Elevaciones laterales serie 1', exact: true }).click();
   await saved(page);
   await page.reload();
-  await page.getByRole('button', { name: 'Día A · B7 / S6' }).click();
+  await page.getByRole('button', { name: 'Empezar entrenamiento' }).click();
   await expect(page.getByRole('spinbutton', { name: 'Elevaciones laterales serie 1  repeticiones', exact: true })).toHaveValue('10');
 });
 
@@ -78,7 +78,7 @@ test('exporta y restaura una copia; rechaza datos dañados', async ({ page }) =>
   await page.getByRole('button', { name: 'Guardar copia y restaurar' }).click();
   await expect(page.getByRole('alert')).toContainText('Copia restaurada');
   await page.reload();
-  await page.getByRole('button', { name: 'Día A · B7 / S6' }).click();
+  await page.getByRole('button', { name: 'Empezar entrenamiento' }).click();
   await expect(page.getByRole('spinbutton', { name: 'Elevaciones laterales serie 1  repeticiones', exact: true })).toHaveValue('12');
 });
 

@@ -1,6 +1,8 @@
+import { today } from './model';
+import { historyDate, trainingPositions } from './completed';
 import { historicalSessions } from './history';
 import type { Data, Day } from './model';
-export type CalendarConfig = { anchorDate: string; block: number; week: number; lengths: Record<string, number> };
+export type CalendarConfig = { anchorDate: string; block: number; week: number; lengths: Record<string, number>; weeks?: Record<string,string> };
 export type Performance = { id: string; exercise: string; group: string; scope: string; unit: string; convention: string; block: number; week: number; day: Day; date: string | null; weight: number | null; reps: number; rir: string; partials: number | null; failure: boolean; raw: string; source: string };
 export type Review = { id: string; block: number; week: number; day: Day; raw: string; reason: string };
 const DAY_MS = 86400000;
@@ -21,6 +23,12 @@ export function defaultCalendar(data: Data): CalendarConfig {
   // Fixed reference supplied in this conversation. Never shift old records on a later visit.
   return { anchorDate: '2026-10-05', block: 7, week: 5, lengths: { 1:12,2:12,3:11,4:10,5:12,6:12,7:5,...lengths } };
 }
+export function resolvedCalendar(data:Data):CalendarConfig {
+  const base=data.calendar??defaultCalendar(data);
+  if(!data.excelCalendar||!data.excel)return base;
+  return {...base,weeks:Object.fromEntries(data.excel.weeks.map(w=>[`${w.block}:${w.week}`,w.start]))};
+}
+export function estimatedWeek(block:number,week:number,calendar:CalendarConfig):boolean{return !calendar.weeks?.[`${block}:${week}`];}
 export function ordinal(block: number, week: number, calendar: CalendarConfig): number {
   let n = week - 1;
   n += Math.max(0,block-1)*12;
@@ -28,6 +36,7 @@ export function ordinal(block: number, week: number, calendar: CalendarConfig): 
   return n;
 }
 export function weekDate(block: number, week: number, calendar: CalendarConfig): string {
+  if(calendar.weeks?.[`${block}:${week}`])return calendar.weeks[`${block}:${week}`];
   const offset = ordinal(block,week,calendar)-ordinal(calendar.block,calendar.week,calendar);
   return new Date(Date.parse(`${monday(calendar.anchorDate)}T12:00:00Z`)+offset*7*DAY_MS).toISOString().slice(0,10);
 }
@@ -126,7 +135,7 @@ export function extractStatistics(data: Data): { performances: Performance[]; re
         if (weight===null) uncertain=true;
         const scope=freeLoad(name) ? 'Misma variante y convención' : `Histórico · bloque ${s.block} · máquina sin identificar`;
         const load=convention(name);
-        performances.push({id:`${id}-${count++}`,exercise:name,group:`${name}|${unit}|${load}|${scope}`,scope,unit,convention:load,block:s.block,week:s.week,day:s.day,date:null,weight,reps,rir:rirMatch ? `${rirMatch[1]}${rirMatch[2] ? '–'+rirMatch[2] : ''}` : '',partials,failure:/fallo/i.test(annotation),raw,source:`${s.source}:${line.number}`});
+        performances.push({id:`${id}-${count++}`,exercise:name,group:`${name}|${unit}|${load}|${scope}`,scope,unit,convention:load,block:s.block,week:s.week,day:s.day,date:historyDate(data,s),weight,reps,rir:rirMatch ? `${rirMatch[1]}${rirMatch[2] ? '–'+rirMatch[2] : ''}` : '',partials,failure:/fallo/i.test(annotation),raw,source:`${s.source}:${line.number}`});
       }
       if (ds>=0) weight=null; // A later ordinary set cannot inherit the load of an unparsed dropset.
     }
@@ -153,7 +162,7 @@ export function record(rows: Performance[]): Performance | undefined {
 export type Attendance = { block:number;week:number;date:string;days:Day[];count:number;estimated:boolean };
 export function attendance(data: Data, calendar:CalendarConfig): Attendance[] {
   const positions=new Map<string, {block:number;week:number;days:Set<Day>;estimated:boolean}>();
-  for (const s of [...historicalSessions(data.history).map(s=>({...s,finished:true,estimated:true})),...data.sessions.map(s=>({...s,estimated:false}))]) {
+  for (const s of trainingPositions(data).map(s=>({...s,estimated:!historyDate(data,s)}))) {
     if (!s.finished) continue;
     const key=`${s.block}-${s.week}`;
     const row=positions.get(key)??{block:s.block,week:s.week,days:new Set<Day>(),estimated:s.estimated};
@@ -164,11 +173,11 @@ export function attendance(data: Data, calendar:CalendarConfig): Attendance[] {
   const first=Math.min(...trained.map(r=>r.block)),last=Math.max(calendar.block,...trained.map(r=>r.block));
   const rows:Attendance[]=[];
   for(let b=first;b<=Math.min(last,first+200);b++) {
-    const elapsed=Math.max(0,Math.floor((Date.parse(monday(new Date().toISOString().slice(0,10)))-Date.parse(monday(calendar.anchorDate)))/(7*DAY_MS)));
+    const elapsed=Math.max(0,Math.floor((Date.parse(monday(today()))-Date.parse(monday(calendar.anchorDate)))/(7*DAY_MS)));
     const max=Math.max(calendar.lengths[b]??12,...trained.filter(r=>r.block===b).map(r=>r.week),b===calendar.block ? calendar.week+(b===last?elapsed:0) : 0);
     for(let w=1;w<=Math.min(max,104);w++) {
       const date=weekDate(b,w,calendar);
-      if(date>monday(new Date().toISOString().slice(0,10)) && !positions.has(`${b}-${w}`)) continue;
+      if(date>monday(today()) && !positions.has(`${b}-${w}`)) continue;
       const r=positions.get(`${b}-${w}`);
       rows.push({block:b,week:w,date,days:[...(r?.days??[])],count:r?.days.size??0,estimated:r?.estimated??true});
     }
