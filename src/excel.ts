@@ -1,9 +1,10 @@
+import { readPrescriptions, type Prescription } from './training';
 import type { BodyWeight, Data, Day } from './model';
 export type ExcelSource = { id:string; name:string; block:number; content:string };
 export type ExcelDay = { id:string; sourceId:string; sheet:string; row:number; block:number; week:number; date:string; kg:number|null; day:Day|null; training:string; performance:string; steps:number|null };
 export type ExcelWeek = { sourceId:string; sheet:string; block:number; week:number; start:string; end:string };
 export type ExcelNote = { sourceId:string; sheet:string; block:number; week:number; category:string; text:string };
-export type ExcelArchive = { version:1; sources:ExcelSource[]; days:ExcelDay[]; weeks:ExcelWeek[]; notes:ExcelNote[]; issues:string[] };
+export type ExcelArchive = { version:1; sources:ExcelSource[]; days:ExcelDay[]; weeks:ExcelWeek[]; notes:ExcelNote[]; issues:string[]; prescriptions?:Prescription[] };
 export type WeightCandidate = BodyWeight & { source:string };
 export type ExcelImport = { archive:ExcelArchive; weights:WeightCandidate[] };
 export type WeightReview = { date:string; existing?:BodyWeight; candidates:WeightCandidate[]; conflict:boolean };
@@ -18,7 +19,7 @@ export function excelDate(value:unknown):string|null {
 const text=(v:unknown)=>v===null||v===undefined?'':String(v).trim();
 const num=(v:unknown):number|null=>{if(typeof v==='number')return Number.isFinite(v)&&v>=0?v:null;if(typeof v==='string'&&/^\d+(?:[.,]\d+)?$/.test(v.trim()))return Number(v.trim().replace(',','.'));return null;};
 const day=(v:unknown):Day|null=>{const label=text(v).toLowerCase().replace(/\s/g,'');if(/^fullbody[abc]$/.test(label))return label.at(-1)!.toUpperCase() as Day;if(['brazo','brazos'].includes(label))return 'Brazos';return null;};
-export function emptyExcel():ExcelArchive{return {version:1,sources:[],days:[],weeks:[],notes:[],issues:[]};}
+export function emptyExcel():ExcelArchive{return {version:1,sources:[],days:[],weeks:[],notes:[],issues:[],prescriptions:[]};}
 export async function readExcelFiles(files:File[]):Promise<ExcelImport> {
   if(!files.length||files.length>30||files.some(f=>!f.name.toLowerCase().endsWith('.xlsx'))||files.reduce((sum,f)=>sum+f.size,0)>10_000_000)throw new Error('Selecciona hasta 30 archivos Excel .xlsx (máximo 10 MB en total).');
   const {default:readXlsx}=await import('read-excel-file/browser');
@@ -32,6 +33,7 @@ export async function readExcelFiles(files:File[]):Promise<ExcelImport> {
     let binary='';for(let i=0;i<bytes.length;i+=16384)binary+=String.fromCharCode(...bytes.subarray(i,i+16384));
     archive.sources.push({id:hash,name:file.name,block,content:btoa(binary)});
     const sheets=await readXlsx(file,{trim:false});
+    archive.prescriptions!.push(...readPrescriptions(sheets as {sheet:string;data:unknown[][]}[],hash,block));
     let recognized=0;
     for(const sheet of sheets){
       const match=sheet.sheet.match(/^Datos S(\d+)\s*-\s*S(\d+)$/i);if(!match)continue;
@@ -85,7 +87,7 @@ export function mergeExcel(data:Data,incoming:ExcelImport,choices:Record<string,
   }
   const existing=data.excel??emptyExcel();
   const unique=<T,>(values:T[],key:(v:T)=>string)=>[...new Map(values.map(v=>[key(v),v])).values()];
-  const excel:ExcelArchive={version:1,sources:unique([...existing.sources,...incoming.archive.sources],s=>s.id),days:unique([...existing.days,...incoming.archive.days],d=>d.id),weeks:unique([...existing.weeks,...incoming.archive.weeks],w=>`${w.sourceId}:${w.block}:${w.week}`),notes:unique([...existing.notes,...incoming.archive.notes],n=>`${n.sourceId}:${n.sheet}:${n.week}:${n.category}`),issues:[...new Set([...existing.issues,...incoming.archive.issues])]};
+  const excel:ExcelArchive={version:1,sources:unique([...existing.sources,...incoming.archive.sources],s=>s.id),days:unique([...existing.days,...incoming.archive.days],d=>d.id),weeks:unique([...existing.weeks,...incoming.archive.weeks],w=>`${w.sourceId}:${w.block}:${w.week}`),notes:unique([...existing.notes,...incoming.archive.notes],n=>`${n.sourceId}:${n.sheet}:${n.week}:${n.category}`),issues:[...new Set([...existing.issues,...incoming.archive.issues])],prescriptions:unique([...(existing.prescriptions??[]),...(incoming.archive.prescriptions??[])],p=>`${p.sourceId}:${p.week}:${p.day}:${p.name}`)};
   validateExcel(excel);
   let calendar=data.calendar;
   if(useCalendar){
@@ -109,6 +111,28 @@ export function validateExcel(value:unknown):ExcelArchive{
   const dates=new Map<string,string>();
   for(const w of d.weeks){if(!w||!ids.has(w.sourceId)||!str(w.sheet)||!integer(w.block,1,99)||!integer(w.week)||!validDate(w.start)||!validDate(w.end)||Date.parse(w.end)-Date.parse(w.start)!==6*86400000)fail();const key=`${w.block}:${w.week}`;if(dates.has(key)&&dates.get(key)!==w.start)throw new Error(`Dos Excel indican fechas distintas para el bloque ${w.block}, semana ${w.week}. Revisa los archivos antes de importar.`);dates.set(key,w.start);}
   for(const n of d.notes)if(!n||!ids.has(n.sourceId)||!str(n.sheet)||!integer(n.block,1,99)||!integer(n.week)||!str(n.category)||!str(n.text))fail();
+  if(d.prescriptions!==undefined){
+    if(!Array.isArray(d.prescriptions)||d.prescriptions.length>100000)fail();
+    const keys=new Map<string,string>();
+    for(const p of d.prescriptions){
+      if(!p||!ids.has(p.sourceId)||!str(p.sheet)||!integer(p.block,1,99)||!integer(p.week)||!['A','B','C','Brazos'].includes(p.day)||!str(p.name)||!Array.isArray(p.goals)||!p.goals.length||p.goals.length>20||p.goals.some(g=>!str(g))||!str(p.rir)||!str(p.series)||typeof p.linear!=='boolean')fail();
+      const key=`${p.block}:${p.week}:${p.day}:${p.name}`,value=JSON.stringify([p.goals,p.rir,p.series]);
+      if(keys.has(key)&&keys.get(key)!==value)throw new Error('Dos Excel contienen prescripciones distintas para el mismo ejercicio y semana.');keys.set(key,value);
+    }
+  }
   if(d.issues.some(i=>!str(i)))fail();
   return d;
+}
+
+// Upgrade previously imported originals locally, without requiring another upload.
+export async function ensurePrescriptions(data:Data):Promise<Data>{
+  if(!data.excel||data.excel.prescriptions!==undefined)return data;
+  const {default:readXlsx}=await import('read-excel-file/browser');
+  const prescriptions:Prescription[]=[];
+  for(const source of data.excel.sources){
+    const bytes=Uint8Array.from(atob(source.content),c=>c.charCodeAt(0));
+    const sheets=await readXlsx(new Blob([bytes]));
+    prescriptions.push(...readPrescriptions(sheets as {sheet:string;data:unknown[][]}[],source.id,source.block));
+  }
+  const excel={...data.excel,prescriptions};validateExcel(excel);return {...data,excel};
 }

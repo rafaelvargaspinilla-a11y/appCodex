@@ -19,13 +19,13 @@ test('Excel importa pesos, excluye medias y revisa conflictos; recarga y copia c
  await page.goto('./');await menu(page,'Peso corporal').or(menu(page,'Peso')).click();
  await page.getByLabel('Fecha del peso',{exact:true}).fill('2026-10-05');await page.getByRole('spinbutton',{name:'Peso corporal (kg)',exact:true}).fill('65');await page.getByRole('button',{name:'Guardar peso',exact:true}).click();
  await expect(page.getByRole('status')).toContainText('Guardado en este dispositivo');
- await page.getByTestId('excel-file').setInputFiles(fixture);
+ await menu(page,'Mis datos').click();await page.getByTestId('excel-file').setInputFiles(fixture);
  await expect(page.getByRole('dialog')).toContainText('2 pesajes encontrados');await expect(page.getByRole('dialog')).toContainText('1 fechas con pesos distintos');
- await page.getByRole('button',{name:'Cancelar',exact:true}).click();await expect(page.locator('.weight-row')).toHaveCount(1);
+ await page.getByRole('button',{name:'Cancelar',exact:true}).click();await menu(page,'Peso corporal').or(menu(page,'Peso')).click();await expect(page.locator('.weight-row')).toHaveCount(1);await menu(page,'Mis datos').click();
  await page.getByTestId('excel-file').setInputFiles(fixture);await page.getByRole('button',{name:'Añadir datos del Excel',exact:true}).click();
- await expect(page.getByRole('alert')).toContainText('Excel importado');await expect(page.locator('.weight-row')).toHaveCount(2);await expect(page.locator('.weight-row').last()).toContainText('65');
- await page.getByTestId('excel-file').setInputFiles(fixture);await page.getByLabel('Resolver peso 2026-10-05',{exact:true}).selectOption('0');await page.getByRole('button',{name:'Añadir datos del Excel',exact:true}).click();
- await expect(page.getByRole('alert')).toContainText('Excel importado');await expect(page.locator('.weight-row')).toHaveCount(2);await expect(page.locator('.weight-row').last()).toContainText('70');
+ await expect(page.getByRole('alert')).toContainText('Excel importado');await menu(page,'Peso corporal').or(menu(page,'Peso')).click();await expect(page.locator('.weight-row')).toHaveCount(2);await expect(page.locator('.weight-row').last()).toContainText('65');
+ await menu(page,'Mis datos').click();await page.getByTestId('excel-file').setInputFiles(fixture);await page.getByLabel('Resolver peso 2026-10-05',{exact:true}).selectOption('0');await page.getByRole('button',{name:'Añadir datos del Excel',exact:true}).click();
+ await expect(page.getByRole('alert')).toContainText('Excel importado');await menu(page,'Peso corporal').or(menu(page,'Peso')).click();await expect(page.locator('.weight-row')).toHaveCount(2);await expect(page.locator('.weight-row').last()).toContainText('70');
  await page.reload();await menu(page,'Mis datos').click();await expect(page.locator('.excel-importer')).toContainText('1 archivos Excel guardados');
  const waiting=page.waitForEvent('download');await page.getByRole('button',{name:'Exportar mis datos',exact:true}).click();const path=await(await waiting).path();
  const backup=JSON.parse(readFileSync(path!,'utf8'));expect(backup.weights).toHaveLength(2);expect(backup.excel.sources).toHaveLength(1);expect(Buffer.from(backup.excel.sources[0].content,'base64')).toEqual(readFileSync(fixture));
@@ -44,7 +44,7 @@ test('los siete Excel privados aportan 339 pesos y fechas reales sin duplicar el
  await page.getByLabel('Filtrar bloque',{exact:true}).selectOption('1');await page.getByLabel('Filtrar semana',{exact:true}).selectOption('1');await page.getByLabel('Filtrar día',{exact:true}).selectOption('A');await page.locator('.archive-session summary').click();await expect(page.locator('.archive-session')).toContainText('2025-04-22');
  await menu(page,'Entrenar').click();await expect(page.locator('.summary-card').first()).toContainText('222');await expect(page.locator('.summary-card').nth(1)).toContainText('18');
  await menu(page,'Peso corporal').or(menu(page,'Peso')).click();await expect(page.locator('.weight-row')).toHaveCount(339);
- await page.getByTestId('excel-file').setInputFiles(files);await expect(page.getByRole('dialog')).toContainText('339 pesajes ya existentes');await page.getByRole('button',{name:'Añadir datos del Excel',exact:true}).click();await expect(page.getByRole('alert')).toContainText('Excel importado');await expect(page.locator('.weight-row')).toHaveCount(339);
+ await menu(page,'Mis datos').click();await page.getByTestId('excel-file').setInputFiles(files);await expect(page.getByRole('dialog')).toContainText('339 pesajes ya existentes');await page.getByRole('button',{name:'Añadir datos del Excel',exact:true}).click();await expect(page.getByRole('alert')).toContainText('Excel importado');await menu(page,'Peso corporal').or(menu(page,'Peso')).click();await expect(page.locator('.weight-row')).toHaveCount(339);
  await page.reload();await menu(page,'Mis datos').click();await expect(page.locator('.excel-importer')).toContainText('7 archivos Excel guardados');
  const waiting=page.waitForEvent('download');await page.getByRole('button',{name:'Exportar mis datos',exact:true}).click();const backup=JSON.parse(readFileSync((await(await waiting).path())!,'utf8'));
  expect(backup.weights).toHaveLength(339);expect(backup.excel.sources).toHaveLength(7);expect(backup.excel.weeks).toHaveLength(84);expect(backup.history.files).toHaveLength(7);

@@ -1,12 +1,13 @@
+import { prefillSession, trainingName } from './training';
 import { validateExcel, type ExcelArchive } from './excel';
 import { trainingPositions } from './completed';
 import type { CalendarConfig } from './statistics';
 import { parseHistory, type HistoryArchive } from './history';
 export type Day = 'A' | 'B' | 'C' | 'Brazos';
 export type Result = { weight: number | null; reps: number | null; rir: string; failure: boolean; partials: number | null };
-export type SetRecord = { id: string; goal: string; targetRir: number; done: boolean; split: boolean; left: Result; right: Result };
-export type Exercise = { id: string; name: string; unilateral: boolean; loadLabel: string; equipment: string; notes: string; sets: SetRecord[] };
-export type Session = { id: string; block: number; week: number; day: Day; date: string; createdAt: string; finished: boolean; exercises: Exercise[] };
+export type SetRecord = { id: string; goal: string; targetRir: number; done: boolean; split: boolean; left: Result; right: Result; previous?: {left:Result;right:Result;split:boolean;label:string} };
+export type Exercise = { id: string; name: string; unilateral: boolean; loadLabel: string; equipment: string; notes: string; sets: SetRecord[]; linear?:boolean; prescription?:string };
+export type Session = { id: string; block: number; week: number; day: Day; date: string; createdAt: string; finished: boolean; exercises: Exercise[]; startedAt?:string; endedAt?:string; restStartedAt?:string; cardio?:boolean; planSource?:string };
 export type BodyWeight = { id: string; date: string; kg: number; note: string };
 export type Data = { version: 1; sessions: Session[]; weights: BodyWeight[]; history?: HistoryArchive; calendar?: CalendarConfig; excel?: ExcelArchive; excelCalendar?: boolean };
 type Template = [string, string[], boolean?, string?];
@@ -72,17 +73,28 @@ export const result = (weight: number | null = null): Result => ({ weight, reps:
 export function newSet(goal: string, weight: number | null = null, targetRir = 0): SetRecord {
   return { id: crypto.randomUUID(), goal, targetRir, done: false, split: false, left: result(weight), right: result(weight) };
 }
-export function createSession(block: number, week: number, day: Day, date: string): Session {
-  return {
-    id: crypto.randomUUID(), block, week, day, date, createdAt: new Date().toISOString(), finished: false,
+export function createSession(block: number, week: number, day: Day, date: string, data?:Data): Session {
+  const session:Session = {
+    id: crypto.randomUUID(), block, week, day, date, createdAt: new Date().toISOString(), startedAt:new Date().toISOString(), cardio:false, finished: false,
     exercises: routines[day].map(([name, goals, unilateral = false, loadLabel = dumbbell], i) => ({
       id: `${day}-${i}`, name, unilateral, loadLabel, equipment: '', notes: '',
       sets: goals.map(goal => newSet(goal, null, name === 'Gemelo en máquina' ? 2 : 0))
     }))
   };
+  const plans=[...new Map((data?.excel?.prescriptions?.filter(p=>p.block===block&&p.week===week&&p.day===day)??[]).map(p=>[p.name,p])).values()];
+  if(plans.length){
+    session.planSource=plans[0].sheet;
+    session.exercises=plans.map((p,i)=>{
+      const name=trainingName(p.name,day),template=routines[day].find(t=>t[0]===name);
+      const loadLabel=template?.[3]??(/búlgara/i.test(name)?'kg totales de las dos mancuernas':/mancuerna/i.test(name)?dumbbell:/multipower|hack|prensa/i.test(name)?added:/barra|peso muerto|sentadilla frontal/i.test(name)?'kg totales, incluida la barra':machine);
+      return {id:`${day}-${i}`,name,unilateral:template?.[2]??/unilateral|búlgara/i.test(name),loadLabel,equipment:'',notes:'',linear:p.linear,prescription:`${p.series} series · RIR ${p.rir||'sin indicar'}`,sets:p.goals.map(goal=>newSet(goal,null,Number(p.rir.match(/^\d+/)?.[0]??0)))};
+    });
+  }
+  if(data)prefillSession(data,session);
+  return session;
 }
 export function previousExercise(data: Data, session: Session, exercise: Exercise): Exercise | undefined {
-  return data.sessions.filter(s => s.id !== session.id &&
+  return data.sessions.filter(s => s.id !== session.id && s.day===session.day &&
     (s.date < session.date || (s.date === session.date && s.createdAt < session.createdAt)))
     .sort((a,b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
     .flatMap(s => s.exercises).find(e => e.name === exercise.name && e.loadLabel === exercise.loadLabel &&
@@ -133,6 +145,17 @@ export function parseBackup(text: string): Data {
     if (!w || !str(w.id) || ids.has(w.id) || !date(w.date) || typeof w.kg !== 'number' || !Number.isFinite(w.kg) ||
       w.kg <= 0 || !str(w.note)) fail();
     ids.add(w.id);
+  }
+  for(const s of d.sessions){
+    for(const key of ['startedAt','endedAt','restStartedAt'])if(s[key]!==undefined&&(!str(s[key])||Number.isNaN(Date.parse(s[key]))))fail();
+    if(s.endedAt!==undefined&&(!s.startedAt||Date.parse(s.endedAt)<Date.parse(s.startedAt)||!s.finished))fail();
+    if(s.cardio!==undefined&&typeof s.cardio!=='boolean')fail();
+    if(s.planSource!==undefined&&!str(s.planSource))fail();
+    for(const e of s.exercises){
+      if(e.linear!==undefined&&typeof e.linear!=='boolean')fail();
+      if(e.prescription!==undefined&&!str(e.prescription))fail();
+      for(const set of e.sets)if(set.previous!==undefined&&(!set.previous||!res(set.previous.left)||!res(set.previous.right)||typeof set.previous.split!=='boolean'||!str(set.previous.label)))fail();
+    }
   }
   if (d.history !== undefined) d.history = parseHistory(d.history);
   if (d.calendar !== undefined) {

@@ -82,10 +82,19 @@ La vista inicial de Progreso es **Todo mi historial**. El selector **Periodo** f
 
 ### Importación directa de Excel
 
-En **Mis datos** o **Peso corporal → Importar Excel**, selecciona los originales «Bloque N…xlsx». La vista previa indica pesos nuevos, repetidos y diferentes para la misma fecha. Por defecto conserva los valores existentes; se puede elegir explícitamente un valor del Excel. Cancelar no cambia datos. Volver a importar los mismos archivos no duplica pesajes ni originales.
+En **Mis datos → Importar Excel**, selecciona los originales «Bloque N…xlsx». La vista previa indica pesos nuevos, repetidos y diferentes para la misma fecha. Por defecto conserva los valores existentes; se puede elegir explícitamente un valor del Excel. Cancelar no cambia datos. Volver a importar los mismos archivos no duplica pesajes ni originales.
 
 Solo las filas diarias de las hojas «Datos S1 - S4», «Datos S5 - S8» y «Datos S9 - S12» aportan pesajes. Las medias semanales, pesos iniciales, errores de fórmula y plantillas futuras no se importan como pesajes. Los valores vacíos no se rellenan con cero. Los XLSX se leen en el navegador con `read-excel-file` y se guardan íntegros en IndexedDB, incluidos dietas, rutinas y notas, junto con un SHA-256. Las copias JSON incluyen esos originales. No se publican archivos personales en el repositorio ni se envían a un servicio externo.
 
 Las semanas reales del Excel pueden sustituir el calendario estimado, conservando los huecos. Solo una coincidencia única de bloque/semana/día permite asignar una fecha exacta a una sesión TXT; varias fechas se señalan para revisión. Las rutinas prescritas no generan resultados. Los días de entrenamiento registrados en Excel se reúnen con los TXT y sesiones nuevas por bloque/semana/día para evitar contar dos veces el mismo entrenamiento. Los días extra del Excel sin series se muestran como registros sin resultados en Historial.
 
 El inicio conserva el total de sesiones terminadas y muestra en lugar de series registradas las sesiones terminadas del bloque seleccionado. Se retiraron las tarjetas «En tu diario» y «Un poco mejor. Una vez más.». Queda pendiente diseñar una nueva propuesta motivacional. Las sesiones abiertas se retoman mediante **Empezar entrenamiento**; el avance A → B → C → Brazos sigue vigente.
+
+
+### Preparación y tiempos del entrenamiento
+
+Las sesiones nuevas usan las hojas ENTRENAMIENTO del bloque y semana importados: ejercicios, número de series, rangos de repeticiones y RIR. Las técnicas especiales conservan el texto original; «2 (+1)» crea tres series y los dropsets/clusters no crean series ordinarias adicionales. Las filas p1… de preparación no se cuentan como series de trabajo. Si falta una prescripción, se muestra y se usa la rutina base. Los Excel ya guardados se analizan localmente al actualizar; no hace falta importarlos de nuevo.
+
+Cada serie se rellena con los resultados de la última sesión del mismo día y ejercicio con carga compatible. El resultado anterior aparece junto a la serie y no cuenta para estadísticas hasta marcar el check. Las entradas TXT ambiguas no se precargan. En series lineales, cambiar la carga de la primera actualiza las posteriores sin completar; las series ya realizadas y las rutinas con rangos distintos conservan su carga.
+
+«Añadir comentario» abre las notas del ejercicio. El check inicia el descanso desde cero, calculado por fecha real para sobrevivir a recargas y suspensión del móvil. Las sesiones nuevas guardan inicio, fin y cardio; el historial muestra duración y cardio. Las sesiones antiguas conservan horarios desconocidos. El inicio muestra sesiones terminadas del bloque / sesiones previstas y porcentaje; el total se calcula con cuatro sesiones por semana y las semanas del plan (12 si no se ha importado un plan).
