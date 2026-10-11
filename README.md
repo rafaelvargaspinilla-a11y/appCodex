@@ -116,3 +116,5 @@ La versión 3 de precarga corrige referencias automáticas guardadas de otro dí
 
 
 Progreso en móvil usa una columna con ancho limitado a la pantalla y textos largos que se parten, incluidos los nombres de fuentes al desplegar una serie. Las gráficas mantienen su proporción dentro del panel. El contenedor móvil permite gestos de desplazamiento vertical y zoom, y bloquea el eje horizontal. Se comprobó con detalles desplegados a 320, 375, 390 y 430 px de ancho, además de las pruebas de estadísticas y zona segura móvil.
+
+En «Prepara tu sesión», los días A, B, C y Brazos se distribuyen en dos columnas en móvil y el campo de fecha queda limitado al ancho del panel. La tarjeta «Sesiones terminadas este bloque» muestra solo sesiones / total y porcentaje, sin el número de bloque ni las semanas. Se comprobó el ajuste a 320, 375, 390 y 430 px.

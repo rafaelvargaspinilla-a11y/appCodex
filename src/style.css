@@ -47,3 +47,16 @@
   .stat-chart svg { display:block; max-width:100%; height:auto; }
   .attendance-week summary { flex-wrap:wrap; }
 }
+.block-summary > strong { display:flex; align-items:baseline; gap:4px; flex-wrap:wrap; }
+.block-summary > strong small { display:inline; margin:0; font-size:16px; }
+.block-summary .block-percentage { display:block; margin-top:10px; color:var(--lime); font-size:13px; }
+@media(max-width:700px) {
+  .session-builder { min-width:0; max-width:100%; }
+  .session-builder .section-heading { flex-wrap:wrap; }
+  .session-builder .day-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .session-builder .day-card { min-width:0; width:100%; max-width:100%; }
+  .session-builder .session-fields { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .session-fields > label { min-width:0; max-width:100%; }
+  .session-fields input[type=date] { display:block; width:100%; min-width:0; max-width:100%; min-height:45px; -webkit-appearance:none; appearance:none; }
+  .session-fields input[type=date]::-webkit-date-and-time-value { min-width:0; text-align:left; }
+}
