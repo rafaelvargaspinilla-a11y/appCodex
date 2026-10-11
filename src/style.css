@@ -36,3 +36,5 @@
   .mobile-nav { padding-bottom:calc(9px + var(--safe-bottom)); }
   .main-content { padding-bottom:calc(110px + var(--safe-bottom)); }
 }
+.session-actions { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+.session-actions .back-button { margin-bottom:0; }

@@ -95,7 +95,7 @@ El inicio conserva el total de sesiones terminadas y muestra en lugar de series 
 
 Las sesiones nuevas usan las hojas ENTRENAMIENTO del bloque y semana importados: ejercicios, número de series, rangos de repeticiones y RIR. Las técnicas especiales conservan el texto original; «2 (+1)» crea tres series y los dropsets/clusters no crean series ordinarias adicionales. Las filas p1… de preparación no se cuentan como series de trabajo. Si falta una prescripción, se muestra y se usa la rutina base. Los Excel ya guardados se analizan localmente al actualizar; no hace falta importarlos de nuevo.
 
-Cada serie se rellena con los resultados de la última vez que se hizo el ejercicio con una carga compatible, aunque cambie el día A/B/C/Brazos. El resultado anterior aparece junto a la serie y no cuenta para estadísticas hasta marcar el check. Las entradas TXT ambiguas no se precargan. En series lineales, cambiar la carga de la primera actualiza las posteriores sin completar; las series ya realizadas y las rutinas con rangos distintos conservan su carga.
+Cada serie se rellena con los resultados de la última vez que se hizo el ejercicio con una carga compatible, aunque cambie el día A/B/C/Brazos. El resultado anterior se prepara directamente en los campos y no cuenta para estadísticas hasta marcar el check. Las cajas duplicadas «Anterior» no se muestran. Las entradas TXT ambiguas no se precargan. En series lineales, cambiar la carga de la primera actualiza las posteriores sin completar; las series ya realizadas y las rutinas con rangos distintos conservan su carga.
 
 «Añadir comentario» abre las notas del ejercicio. El check inicia el descanso desde cero, calculado por fecha real para sobrevivir a recargas y suspensión del móvil. Las sesiones nuevas guardan inicio, fin y cardio; el historial muestra duración y cardio. Las sesiones antiguas conservan horarios desconocidos. El inicio muestra sesiones terminadas del bloque / sesiones previstas y porcentaje; el total se calcula con cuatro sesiones por semana y las semanas del plan (12 si no se ha importado un plan).
 
@@ -105,3 +105,8 @@ Al retomar una sesión pendiente creada antes de esta corrección se rellenan lo
 La extensión de codo overhead usa una única mancuerna y carga «kg de la mancuerna», sin diferenciación de lados. Las sesiones pendientes anteriores se adaptan al retomarlas; las sesiones terminadas no se reescriben. El texto explicativo de series lineales se retiró del entrenamiento, conservando la propagación de carga.
 
 En móvil el contenido tiene su propia superficie de desplazamiento y la navegación inferior permanece fuera de ella. La cabecera permanece visible y los relojes se fijan debajo, con los márgenes seguros de iOS (`viewport-fit=cover`). Se verificó el desplazamiento en ambas direcciones y con una zona segura superior de 59 px e inferior de 34 px simuladas en Chromium; no se probó en un iPhone físico.
+
+
+### Reiniciar una sesión abierta
+
+Dentro de una sesión pendiente, **Reiniciar entrenamiento** abre una confirmación. Cancelar no modifica datos. Confirmar sustituye únicamente esa sesión, conservando su identificador, bloque, semana y día de rutina; usa la fecha de hoy y un inicio nuevo. Se vuelven a aplicar la prescripción vigente y los resultados anteriores, excluyendo la sesión que se reinicia como fuente. Se descartan sus resultados y cambios, se desmarcan series y cardio y se borra el descanso. No se crean sesiones duplicadas ni se modifica el resto del histórico. Las sesiones terminadas no muestran este botón.
