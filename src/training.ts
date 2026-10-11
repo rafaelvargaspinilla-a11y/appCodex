@@ -47,10 +47,10 @@ function compatibleName(name:string,day:Day,exercise:Exercise):boolean{
 }
 export function prefillSession(data:Data,session:Session):void{
   for(const e of session.exercises){
-    const candidates:{position:number;label:string;sets:(PreviousSet|null)[];notes?:string;equipment?:string}[]=[];
+    const candidates:{day:Day;position:number;label:string;sets:(PreviousSet|null)[];notes?:string;equipment?:string}[]=[];
     for(const s of data.sessions.filter(s=>s.id!==session.id&&order(s)<order(session))){
       const old=s.exercises.find(x=>compatibleName(x.name,s.day,e)&&compatibleLoad(x.loadLabel,e.loadLabel)&&x.sets.some(set=>set.done));
-      if(old)candidates.push({position:order(s),label:`Bloque ${s.block} · semana ${s.week} · día ${s.day}`,sets:old.sets.map(set=>set.done?{left:{...set.left},right:{...set.right},split:set.split}:null),notes:old.notes,equipment:old.equipment});
+      if(old)candidates.push({day:s.day,position:order(s),label:`Bloque ${s.block} · semana ${s.week} · día ${s.day}`,sets:old.sets.map(set=>set.done?{left:{...set.left},right:{...set.right},split:set.split}:null),notes:old.notes,equipment:old.equipment});
     }
     for(const s of historicalSessions(data.history).filter(s=>order(s)<order(session))){
       for(const line of s.lines){
@@ -60,25 +60,34 @@ export function prefillSession(data:Data,session:Session):void{
         // Retain explicit contradictory variants for review instead of importing them.
         if(s.block===2&&/Press muy inclinado/i.test(name)&&/primera serie/i.test(line.text))continue;
         const sets=historicalResults(line.text,e.unilateral);
-        if(sets.some(set=>set.left.reps!==null||set.right.reps!==null))candidates.push({position:order(s),label:`Bloque ${s.block} · semana ${s.week} · día ${s.day}`,sets});
+        if(sets.some(set=>set.left.reps!==null||set.right.reps!==null))candidates.push({day:s.day,position:order(s),label:`Bloque ${s.block} · semana ${s.week} · día ${s.day}`,sets});
       }
     }
-    const previous=candidates.sort((a,b)=>b.position-a.position)[0];if(!previous)continue;
+    const previous=candidates.sort((a,b)=>Number(b.day===session.day)-Number(a.day===session.day)||b.position-a.position)[0];if(!previous)continue;
     if(!e.notes&&previous.notes)e.notes=previous.notes;
     if(!e.equipment&&previous.equipment)e.equipment=previous.equipment;
     e.sets.forEach((set,i)=>{
-      const old=previous.sets[i];if(!old||set.done||set.previous)return;
+      const old=previous.sets[i];if(!old||set.done)return;
+      if(set.previous){
+        // Correct stale automatic references only while their fields remain untouched.
+        const same=(a:Result,b:Result)=>a.weight===b.weight&&a.reps===b.reps&&a.rir===b.rir&&a.failure===b.failure&&a.partials===b.partials;
+        if(set.previous.label!==previous.label&&same(set.left,set.previous.left)&&(!set.split||same(set.right,set.previous.right))){
+          set.left={...old.left};set.right={...old.right};set.split=e.unilateral&&old.split;
+          set.previous={left:{...old.left},right:{...old.right},split:set.split,label:previous.label};
+        }
+        return;
+      }
       const fill=(current:Result,prior:Result):Result=>({...current,weight:current.weight??prior.weight,reps:current.reps??prior.reps,rir:current.rir||prior.rir,partials:current.partials??prior.partials,failure:current.failure||prior.failure});
       const untouched=set.left.reps===null&&set.right.reps===null;
       set.left=fill(set.left,old.left);set.right=fill(set.right,old.right);if(untouched)set.split=e.unilateral&&old.split;
       set.previous={left:{...old.left},right:{...old.right},split:e.unilateral&&old.split,label:previous.label};
     });
   }
-  session.prefillVersion=2;
+  session.prefillVersion=3;
 }
 function compatibleLoad(previous:string,current:string):boolean{return previous===current||/kg (?:por mancuerna|de la mancuerna)/.test(previous)&&/kg (?:por mancuerna|de la mancuerna)/.test(current);}
 export function prepareExistingSession(data:Data,session:Session):Session{
-  if(session.finished||session.prefillVersion===2)return session;
+  if(session.finished||session.prefillVersion===3)return session;
   const next=structuredClone(session);
   for(const e of next.exercises)if(/overhead/i.test(e.name)){
     e.unilateral=false;e.loadLabel='kg de la mancuerna';

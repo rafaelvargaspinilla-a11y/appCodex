@@ -149,7 +149,7 @@ export function parseBackup(text: string): Data {
   for(const s of d.sessions){
     for(const key of ['startedAt','endedAt','restStartedAt'])if(s[key]!==undefined&&(!str(s[key])||Number.isNaN(Date.parse(s[key]))))fail();
     if(s.endedAt!==undefined&&(!s.startedAt||Date.parse(s.endedAt)<Date.parse(s.startedAt)||!s.finished))fail();
-    if(s.prefillVersion!==undefined&&(!Number.isInteger(s.prefillVersion)||s.prefillVersion<1||s.prefillVersion>2))fail();
+    if(s.prefillVersion!==undefined&&(!Number.isInteger(s.prefillVersion)||s.prefillVersion<1||s.prefillVersion>3))fail();
     if(s.cardio!==undefined&&typeof s.cardio!=='boolean')fail();
     if(s.planSource!==undefined&&!str(s.planSource))fail();
     for(const e of s.exercises){
