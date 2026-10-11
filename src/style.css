@@ -17,3 +17,22 @@
 .cardio-check { padding:20px; background:#20251d; border-radius:12px; margin-top:16px; }
 .summary-card .progress-track { margin-top:12px; }
 @media(max-width:600px) { .session-clocks { gap:12px; padding:12px; } .session-clocks strong { font-size:23px; } .session-clocks > div { flex:1; } }
+
+/* Keep navigation outside the mobile scroll surface and below the iPhone safe area. */
+@media(max-width:700px) {
+  html, body, #root { height:100%; overflow:hidden; }
+  .app-shell { height:100dvh; min-height:0; overflow:hidden; }
+  .main-shell { height:100%; overflow-y:auto; overscroll-behavior-y:contain; -webkit-overflow-scrolling:touch; }
+  .topbar { position:sticky; top:0; z-index:15; background:var(--panel); height:calc(61px + env(safe-area-inset-top, 0px)); padding-top:env(safe-area-inset-top, 0px); }
+  .session-clocks { top:calc(73px + env(safe-area-inset-top, 0px)); }
+  .main-content { padding-bottom:calc(110px + env(safe-area-inset-bottom, 0px)); }
+  .mobile-nav { bottom:0; z-index:50; flex-shrink:0; padding-left:max(8px, env(safe-area-inset-left, 0px)); padding-right:max(8px, env(safe-area-inset-right, 0px)); }
+}
+
+:root { --safe-top:env(safe-area-inset-top, 0px); --safe-bottom:env(safe-area-inset-bottom, 0px); }
+@media(max-width:700px) {
+  .topbar { height:calc(61px + var(--safe-top)); padding-top:var(--safe-top); }
+  .session-clocks { top:calc(73px + var(--safe-top)); }
+  .mobile-nav { padding-bottom:calc(9px + var(--safe-bottom)); }
+  .main-content { padding-bottom:calc(110px + var(--safe-bottom)); }
+}

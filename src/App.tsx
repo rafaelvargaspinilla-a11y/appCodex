@@ -1,5 +1,5 @@
 import { ensurePrescriptions } from './excel';
-import { plannedBlock, propagateWeight, elapsedSeconds, clockLabel } from './training';
+import { plannedBlock, prepareExistingSession, propagateWeight, elapsedSeconds, clockLabel } from './training';
 import { ExcelImporter } from './ExcelImporter';
 import { trainingPositions } from './completed';
 import { applyUpdate, checkUpdate, updateWaiting } from './updates';
@@ -54,7 +54,6 @@ function ExerciseCard({ exercise, index, session, data, update }: { exercise: Ex
     {first && !exercise.sets.some(s=>s.previous) && <div className="previous">Anterior · {first.left.weight === null ? 'carga no anotada' : `${numberLabel(first.left.weight)} kg`} × {first.left.reps} · RIR {first.left.rir || 'sin anotar'}{first.split && ' · izquierda'}</div>}
     {open && <div className="exercise-details"><label>Máquina / equipo<input placeholder="Identifica la máquina para comparar sesiones" value={exercise.equipment} onChange={e => update({ ...exercise, equipment: e.target.value })} /></label><label>Notas y ajustes<textarea placeholder="Técnica, posición del banco, recordatorios…" value={exercise.notes} onChange={e => update({ ...exercise, notes: e.target.value })} /></label><label>Cómo anotas la carga<select value={exercise.loadLabel} onChange={e => update({ ...exercise, loadLabel: e.target.value })}>{[...new Set([exercise.loadLabel, 'kg por mancuerna', 'kg totales, incluida la barra', 'kg añadidos', 'kg indicados en la máquina', 'kg de lastre (opcional)'])].map(v => <option key={v}>{v}</option>)}</select></label></div>}
     {exercise.prescription && <p className="small-note">Excel · {exercise.prescription}</p>}
-    {(exercise.linear??exercise.sets.every(s=>s.goal===exercise.sets[0]?.goal)) && exercise.sets.length>1 && <p className="small-note">Series lineales: la carga de la primera se aplica a las siguientes sin completar.</p>}
     {exercise.sets.map((set, i) => <div key={set.id} className={`set-row ${set.done ? 'done' : ''}`}>
       <div className="set-meta"><span>Serie {i + 1}</span><span className="goal">Objetivo <strong>{set.goal}</strong> · RIR {set.targetRir}</span>{exercise.unilateral && <label className="checkbox split"><input type="checkbox" checked={set.split} onChange={e => setUpdate({ ...set, split: e.target.checked, done: false, right: e.target.checked ? { ...set.left } : set.right })} /> Diferenciar lados</label>}</div>
       {set.previous && <p className="previous" data-testid="previous-set">Anterior · {set.previous.label} · {set.previous.left.weight??"—"} kg × {set.previous.left.reps??"—"} · RIR {set.previous.left.rir||"—"}{set.previous.split?` · derecha ${set.previous.right.weight??"—"} kg × ${set.previous.right.reps??"—"}`:""}</p>}
@@ -135,7 +134,7 @@ export default function App() {
   const startSession = () => {
     if (!Number.isInteger(block) || block < 1 || !Number.isInteger(week) || week < 1 || !date) { setToast('Indica un bloque, una semana y una fecha válidos.'); return; }
     const existing = data.sessions.find(s => s.block === block && s.week === week && s.day === day);
-    if (existing) { setActiveId(existing.id); setToast('Abierta la sesión que ya tenías en esta semana.'); return; }
+    if (existing) { const prepared=prepareExistingSession(data,existing);if(prepared!==existing)updateSession(prepared); setActiveId(existing.id); setToast('Abierta la sesión que ya tenías en esta semana.'); return; }
     const s = createSession(block, week, day, date,data);
     commit({ ...data, sessions: [...data.sessions, s] }); setActiveId(s.id);
   };

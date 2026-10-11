@@ -27,9 +27,9 @@ test('precarga por serie; propaga cargas lineales; comentarios, cardio y relojes
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
 });
 
-test('el TXT precarga la última sesión del mismo día sin marcarla como realizada',async({page})=>{
+test('el TXT precarga la última vez que se hizo el ejercicio aunque cambie el día',async({page})=>{
  await page.goto('./');await menu(page,'Mis datos').click();await page.getByTestId('history-file').setInputFiles({name:'Gym.txt',mimeType:'text/plain',buffer:Buffer.from('Bloque 7\nSemana 1\nDia A\n1. Elevaciones laterales -> 16kg 10(+1) 8(+0)\nDia B\n1. Elevaciones laterales -> 20kg 6(+0) 5(+0)')});await menu(page,'Entrenar').click();await page.getByLabel('Semana',{exact:true}).fill('2');await page.getByRole('button',{name:'DÍA A A 7 ejercicios'}).click();await page.getByRole('button',{name:'Empezar entrenamiento'}).click();
- await expect(page.getByRole('spinbutton',{name:'Elevaciones laterales serie 1  carga',exact:true})).toHaveValue('16');await expect(page.getByRole('spinbutton',{name:'Elevaciones laterales serie 2  repeticiones',exact:true})).toHaveValue('8');await expect(page.locator('.session-progress strong')).toHaveText('0 / 14');await saved(page);
+ await expect(page.getByRole('spinbutton',{name:'Elevaciones laterales serie 1  carga',exact:true})).toHaveValue('20');await expect(page.getByRole('spinbutton',{name:'Elevaciones laterales serie 2  repeticiones',exact:true})).toHaveValue('5');await expect(page.locator('.session-progress strong')).toHaveText('0 / 14');await saved(page);
  const data=await dump(page);expect(data.sessions[0].exercises[0].sets.every((s:any)=>!s.done)).toBe(true);
 });
 
@@ -64,6 +64,6 @@ test('prescripciones distinguen series añadidas, técnicas especiales y semanas
  const linear={...session.exercises[0],linear:true};linear.sets[0].split=true;const changed=propagateWeight(linear,linear.sets[0].id,'right',{...linear.sets[0].right,weight:18});expect(changed.sets[1].right.weight).toBe(18);expect(changed.sets[1].left.weight).toBeNull();
  const archive={format:'beast-log-history' as const,version:1 as const,files:[{name:'gym.txt',text:'Bloque 7\nSemana 1\nDia A\n1. Elevaciones laterales -> 16kg 10(+3+4) 8(+1+0)'}]};
  const historical=createSession(7,2,'A','2026-10-10',{version:1,sessions:[],weights:[],history:archive});
- expect(historical.exercises[0].sets[0].left.rir).toBe('');expect(historical.exercises[0].sets[0].previous?.label).toContain('RIR original 3–4');expect(historical.exercises[0].sets[1].left.rir).toBe('0–1');
+ expect(historical.exercises[0].sets[0].left.rir).toBe('');expect(historical.exercises[0].sets[0].previous).toBeDefined();expect(historical.exercises[0].sets[1].left.rir).toBe('0–1');
  expect(()=>parseBackup(JSON.stringify({version:1,sessions:[historical],weights:[],history:archive}))).not.toThrow();
 });

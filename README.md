@@ -60,7 +60,7 @@ Consulta [docs/PUBLICACION.md](docs/PUBLICACION.md) para activar GitHub Pages. E
 
 En **Mis datos → Importar histórico**, selecciona juntos los archivos TXT originales de tus bloques, o un JSON con formato `beast-log-history`, versión `1` y una lista `files` de objetos `{name, text}`. Cada texto contiene un bloque con encabezados `Bloque N`, `Semana N`, `Dia A/B/C` o `Brazos`. La importación conserva los originales, añade bloques sin borrar sesiones actuales y evita duplicados. Los bloques con contenido distinto se rechazan sin modificar datos.
 
-El Historial permite filtrar y buscar las anotaciones completas. No se inventan fechas ni sesiones ausentes. El histórico participa en la propuesta del siguiente día y en las estadísticas de las series que se pueden interpretar sin ambigüedad. No precarga cargas automáticamente. Las copias de seguridad incluyen todos los originales. Los archivos personales no se publican ni se incluyen en el repositorio.
+El Historial permite filtrar y buscar las anotaciones completas. No se inventan fechas ni sesiones ausentes. El histórico participa en la propuesta del siguiente día y en las estadísticas de las series que se pueden interpretar sin ambigüedad. Los resultados inequívocos del histórico rellenan los campos de las series al preparar una sesión; los comentarios e instrucciones no se convierten en resultados. Las copias de seguridad incluyen todos los originales. Los archivos personales no se publican ni se incluyen en el repositorio.
 
 
 ### Progreso y calendario
@@ -95,6 +95,13 @@ El inicio conserva el total de sesiones terminadas y muestra en lugar de series 
 
 Las sesiones nuevas usan las hojas ENTRENAMIENTO del bloque y semana importados: ejercicios, número de series, rangos de repeticiones y RIR. Las técnicas especiales conservan el texto original; «2 (+1)» crea tres series y los dropsets/clusters no crean series ordinarias adicionales. Las filas p1… de preparación no se cuentan como series de trabajo. Si falta una prescripción, se muestra y se usa la rutina base. Los Excel ya guardados se analizan localmente al actualizar; no hace falta importarlos de nuevo.
 
-Cada serie se rellena con los resultados de la última sesión del mismo día y ejercicio con carga compatible. El resultado anterior aparece junto a la serie y no cuenta para estadísticas hasta marcar el check. Las entradas TXT ambiguas no se precargan. En series lineales, cambiar la carga de la primera actualiza las posteriores sin completar; las series ya realizadas y las rutinas con rangos distintos conservan su carga.
+Cada serie se rellena con los resultados de la última vez que se hizo el ejercicio con una carga compatible, aunque cambie el día A/B/C/Brazos. El resultado anterior aparece junto a la serie y no cuenta para estadísticas hasta marcar el check. Las entradas TXT ambiguas no se precargan. En series lineales, cambiar la carga de la primera actualiza las posteriores sin completar; las series ya realizadas y las rutinas con rangos distintos conservan su carga.
 
 «Añadir comentario» abre las notas del ejercicio. El check inicia el descanso desde cero, calculado por fecha real para sobrevivir a recargas y suspensión del móvil. Las sesiones nuevas guardan inicio, fin y cardio; el historial muestra duración y cardio. Las sesiones antiguas conservan horarios desconocidos. El inicio muestra sesiones terminadas del bloque / sesiones previstas y porcentaje; el total se calcula con cuatro sesiones por semana y las semanas del plan (12 si no se ha importado un plan).
+
+
+Al retomar una sesión pendiente creada antes de esta corrección se rellenan los campos vacíos una vez. Se conservan valores escritos, series completadas y campos borrados después de la precarga. El lector de resultados TXT conserva posiciones de series desconocidas, agrupa izquierda/derecha y lee resultados posteriores a notas de técnica; los rangos aproximados y las etapas de dropset/cluster siguen sin convertirse en series normales.
+
+La extensión de codo overhead usa una única mancuerna y carga «kg de la mancuerna», sin diferenciación de lados. Las sesiones pendientes anteriores se adaptan al retomarlas; las sesiones terminadas no se reescriben. El texto explicativo de series lineales se retiró del entrenamiento, conservando la propagación de carga.
+
+En móvil el contenido tiene su propia superficie de desplazamiento y la navegación inferior permanece fuera de ella. La cabecera permanece visible y los relojes se fijan debajo, con los márgenes seguros de iOS (`viewport-fit=cover`). Se verificó el desplazamiento en ambas direcciones y con una zona segura superior de 59 px e inferior de 34 px simuladas en Chromium; no se probó en un iPhone físico.

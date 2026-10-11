@@ -7,7 +7,7 @@ export type Day = 'A' | 'B' | 'C' | 'Brazos';
 export type Result = { weight: number | null; reps: number | null; rir: string; failure: boolean; partials: number | null };
 export type SetRecord = { id: string; goal: string; targetRir: number; done: boolean; split: boolean; left: Result; right: Result; previous?: {left:Result;right:Result;split:boolean;label:string} };
 export type Exercise = { id: string; name: string; unilateral: boolean; loadLabel: string; equipment: string; notes: string; sets: SetRecord[]; linear?:boolean; prescription?:string };
-export type Session = { id: string; block: number; week: number; day: Day; date: string; createdAt: string; finished: boolean; exercises: Exercise[]; startedAt?:string; endedAt?:string; restStartedAt?:string; cardio?:boolean; planSource?:string };
+export type Session = { id: string; block: number; week: number; day: Day; date: string; createdAt: string; finished: boolean; exercises: Exercise[]; startedAt?:string; endedAt?:string; restStartedAt?:string; cardio?:boolean; planSource?:string; prefillVersion?:number };
 export type BodyWeight = { id: string; date: string; kg: number; note: string };
 export type Data = { version: 1; sessions: Session[]; weights: BodyWeight[]; history?: HistoryArchive; calendar?: CalendarConfig; excel?: ExcelArchive; excelCalendar?: boolean };
 type Template = [string, string[], boolean?, string?];
@@ -60,7 +60,7 @@ export const routines: Record<Day, Template[]> = {
     ['Curl de bíceps con barra', ['8–10', '10–12'], false, 'kg totales, incluida la barra'],
     ['JM press en multipower', ['8–12', '8–12'], false, added],
     ['Curl con mancuernas sentado', ['10–15', '10–15'], false, dumbbell],
-    ['Extensión de codo overhead', ['10–15', '10–15'], true, dumbbell],
+    ['Extensión de codo overhead', ['10–15', '10–15'], false, 'kg de la mancuerna'],
     ['Elevaciones laterales en polea Y', ['12–15', '12–15'], true, machine]
   ]
 };
@@ -149,6 +149,7 @@ export function parseBackup(text: string): Data {
   for(const s of d.sessions){
     for(const key of ['startedAt','endedAt','restStartedAt'])if(s[key]!==undefined&&(!str(s[key])||Number.isNaN(Date.parse(s[key]))))fail();
     if(s.endedAt!==undefined&&(!s.startedAt||Date.parse(s.endedAt)<Date.parse(s.startedAt)||!s.finished))fail();
+    if(s.prefillVersion!==undefined&&(!Number.isInteger(s.prefillVersion)||s.prefillVersion<1||s.prefillVersion>2))fail();
     if(s.cardio!==undefined&&typeof s.cardio!=='boolean')fail();
     if(s.planSource!==undefined&&!str(s.planSource))fail();
     for(const e of s.exercises){
