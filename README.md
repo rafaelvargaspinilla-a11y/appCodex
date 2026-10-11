@@ -113,3 +113,6 @@ Dentro de una sesión pendiente, **Reiniciar entrenamiento** abre una confirmaci
 
 
 La versión 3 de precarga corrige referencias automáticas guardadas de otro día al retomar una sesión pendiente. Solo sustituye una serie cuya referencia haya cambiado y cuyos campos sigan coincidiendo íntegramente con su antigua precarga. No modifica series marcadas, sesiones terminadas ni series con valores editados. Conserva el inicio, la fecha y el identificador de la sesión; no exige reiniciarla.
+
+
+Progreso en móvil usa una columna con ancho limitado a la pantalla y textos largos que se parten, incluidos los nombres de fuentes al desplegar una serie. Las gráficas mantienen su proporción dentro del panel. El contenedor móvil permite gestos de desplazamiento vertical y zoom, y bloquea el eje horizontal. Se comprobó con detalles desplegados a 320, 375, 390 y 430 px de ancho, además de las pruebas de estadísticas y zona segura móvil.

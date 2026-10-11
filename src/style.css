@@ -38,3 +38,12 @@
 }
 .session-actions { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
 .session-actions .back-button { margin-bottom:0; }
+
+@media(max-width:700px) {
+  html, body { overscroll-behavior-x:none; }
+  .main-shell { overflow-x:hidden; overscroll-behavior-x:none; touch-action:pan-y pinch-zoom; }
+  .statistics-view { min-width:0; max-width:100%; grid-template-columns:minmax(0, 1fr); overflow-wrap:anywhere; }
+  .statistics-view > .panel, .statistics-view .panel > *, .stats-cards > *, .attendance-grid > * { min-width:0; max-width:100%; }
+  .stat-chart svg { display:block; max-width:100%; height:auto; }
+  .attendance-week summary { flex-wrap:wrap; }
+}
