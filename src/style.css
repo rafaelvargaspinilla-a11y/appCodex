@@ -60,3 +60,16 @@
   .session-fields input[type=date] { display:block; width:100%; min-width:0; max-width:100%; min-height:45px; -webkit-appearance:none; appearance:none; }
   .session-fields input[type=date]::-webkit-date-and-time-value { min-width:0; text-align:left; }
 }
+
+@media(max-width:700px) {
+  .weight-layout { grid-template-columns:minmax(0,1fr); min-width:0; max-width:100%; }
+  .weight-layout > .panel, .weight-form, .weight-form > label { min-width:0; max-width:100%; }
+  .weight-form input, .weight-form textarea { display:block; width:100%; min-width:0; max-width:100%; }
+  .weight-form input[type=date] { min-height:45px; -webkit-appearance:none; appearance:none; }
+  .weight-form input[type=date]::-webkit-date-and-time-value { min-width:0; text-align:left; }
+  .weight-layout .section-heading { flex-wrap:wrap; }
+  .weight-row { gap:12px; }
+  .weight-row > div { min-width:0; overflow-wrap:anywhere; }
+  .weight-row > strong { flex-shrink:0; }
+  .weight-trend { min-width:0; max-width:100%; overflow-wrap:anywhere; }
+}
