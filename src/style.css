@@ -73,3 +73,10 @@
   .weight-row > strong { flex-shrink:0; }
   .weight-trend { min-width:0; max-width:100%; overflow-wrap:anywhere; }
 }
+
+@media(max-width:700px) {
+  .main-shell { touch-action:pan-y; }
+  input,select,textarea,.field-row input,.field-row select,.partials input { font-size:16px; }
+  textarea { resize:none; }
+  .exercise-notes { padding-top:12px; }
+}

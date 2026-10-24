@@ -1,4 +1,4 @@
-import type { Data, Day, Exercise, Result, Session } from './model';
+import { newSet, type Data, type Day, type Exercise, type Result, type Session } from './model';
 import { canonical } from './statistics';
 import { historicalSessions } from './history';
 import { historicalResults, type PreviousSet } from './previousResults';
@@ -16,12 +16,12 @@ export function readPrescriptions(sheets:{sheet:string;data:unknown[][]}[],sourc
       if(!day||! /^[A-Z]$/.test(text(row[1]))||!text(row[2]))continue;
       for(const column of columns){
         const series=text(row[column.index]);if(!series)continue;
-        const match=series.match(/^(\d+)(?:\s*\(\+(\d+)\))?/);if(!match)throw new Error(`Series no reconocidas: ${sheet.sheet}, ${text(row[2])}, S${column.week}.`);
-        const count=Number(match[1])+Number(match[2]??0);if(count<1||count>20)throw new Error('Número de series fuera del rango admitido.');
+        const match=series.match(/^(\d+)(?:\s*(?:\(\s*\+\s*(\d+)\s*\)|\+\s*(\d+)\b))?/);if(!match)throw new Error(`Series no reconocidas: ${sheet.sheet}, ${text(row[2])}, S${column.week}.`);
+        const count=Number(match[1])+Number(match[2]??match[3]??0);if(count<1||count>20)throw new Error('Número de series fuera del rango admitido.');
         const ranges=text(row[5]).split('/').map(s=>s.trim().replace(/\s*[-–]\s*/g,'–'));
         const goals=Array.from({length:count},(_,i)=>ranges[Math.min(i,ranges.length-1)]||'Libre');
         const rir=text(row[column.index+1]);
-        plans.push({sourceId,sheet:sheet.sheet,block,week:column.week,day,name:text(row[2]),goals,rir,series,linear:ranges.length===1&&/^\d+(?:\s*\(\+\d+\))?$/.test(series)});
+        plans.push({sourceId,sheet:sheet.sheet,block,week:column.week,day,name:text(row[2]),goals,rir,series,linear:ranges.length===1&&/^\d+(?:\s*(?:\(\s*\+\s*\d+\s*\)|\+\s*\d+))?$/.test(series)});
       }
     }
   }
@@ -83,15 +83,35 @@ export function prefillSession(data:Data,session:Session):void{
       set.previous={left:{...old.left},right:{...old.right},split:e.unilateral&&old.split,label:previous.label};
     });
   }
+  for(const e of session.exercises){
+    const key=trainingName(e.name,session.day);
+    if(data.exerciseNotes&&Object.hasOwn(data.exerciseNotes,key))e.notes=data.exerciseNotes[key];
+    else if(!e.notes){
+      const prior=data.sessions.filter(s=>s.id!==session.id&&order(s)<order(session)).sort((a,b)=>order(b)-order(a)).flatMap(s=>s.exercises.filter(old=>trainingName(old.name,s.day)===key&&old.notes));
+      if(prior[0])e.notes=prior[0].notes;
+    }
+  }
   session.prefillVersion=3;
 }
 function compatibleLoad(previous:string,current:string):boolean{return previous===current||/kg (?:por mancuerna|de la mancuerna)/.test(previous)&&/kg (?:por mancuerna|de la mancuerna)/.test(current);}
 export function prepareExistingSession(data:Data,session:Session):Session{
-  if(session.finished||session.prefillVersion===3)return session;
+  if(session.finished)return session;
+  const plans=data.excel?.prescriptions?.filter(p=>p.block===session.block&&p.week===session.week&&p.day===session.day)??[];
+  const needsPlan=plans.some(p=>{const e=session.exercises.find(e=>trainingName(e.name,session.day)===trainingName(p.name,session.day));return e&&(e.sets.length<p.goals.length||e.prescription!==`${p.series} series · RIR ${p.rir||'sin indicar'}`);});
+  if(session.prefillVersion===3&&!needsPlan)return session;
   const next=structuredClone(session);
   for(const e of next.exercises)if(/overhead/i.test(e.name)){
     e.unilateral=false;e.loadLabel='kg de la mancuerna';
     for(const set of e.sets)if(!set.done)set.split=false;
+  }
+  for(const p of plans){
+    const e=next.exercises.find(e=>trainingName(e.name,next.day)===trainingName(p.name,next.day));if(!e)continue;
+    e.prescription=`${p.series} series · RIR ${p.rir||'sin indicar'}`;e.linear=p.linear;
+    p.goals.forEach((goal,i)=>{
+      const rir=Number(p.rir.match(/^\d+/)?.[0]??0);
+      if(!e.sets[i])e.sets.push(newSet(goal,null,rir));
+      else if(!e.sets[i].done){e.sets[i].goal=goal;e.sets[i].targetRir=rir;}
+    });
   }
   prefillSession(data,next);return next;
 }

@@ -4,7 +4,7 @@ export type ExcelSource = { id:string; name:string; block:number; content:string
 export type ExcelDay = { id:string; sourceId:string; sheet:string; row:number; block:number; week:number; date:string; kg:number|null; day:Day|null; training:string; performance:string; steps:number|null };
 export type ExcelWeek = { sourceId:string; sheet:string; block:number; week:number; start:string; end:string };
 export type ExcelNote = { sourceId:string; sheet:string; block:number; week:number; category:string; text:string };
-export type ExcelArchive = { version:1; sources:ExcelSource[]; days:ExcelDay[]; weeks:ExcelWeek[]; notes:ExcelNote[]; issues:string[]; prescriptions?:Prescription[] };
+export type ExcelArchive = { version:1; sources:ExcelSource[]; days:ExcelDay[]; weeks:ExcelWeek[]; notes:ExcelNote[]; issues:string[]; prescriptions?:Prescription[]; prescriptionVersion?:number };
 export type WeightCandidate = BodyWeight & { source:string };
 export type ExcelImport = { archive:ExcelArchive; weights:WeightCandidate[] };
 export type WeightReview = { date:string; existing?:BodyWeight; candidates:WeightCandidate[]; conflict:boolean };
@@ -19,7 +19,7 @@ export function excelDate(value:unknown):string|null {
 const text=(v:unknown)=>v===null||v===undefined?'':String(v).trim();
 const num=(v:unknown):number|null=>{if(typeof v==='number')return Number.isFinite(v)&&v>=0?v:null;if(typeof v==='string'&&/^\d+(?:[.,]\d+)?$/.test(v.trim()))return Number(v.trim().replace(',','.'));return null;};
 const day=(v:unknown):Day|null=>{const label=text(v).toLowerCase().replace(/\s/g,'');if(/^fullbody[abc]$/.test(label))return label.at(-1)!.toUpperCase() as Day;if(['brazo','brazos'].includes(label))return 'Brazos';return null;};
-export function emptyExcel():ExcelArchive{return {version:1,sources:[],days:[],weeks:[],notes:[],issues:[],prescriptions:[]};}
+export function emptyExcel():ExcelArchive{return {version:1,sources:[],days:[],weeks:[],notes:[],issues:[],prescriptions:[],prescriptionVersion:2};}
 export async function readExcelFiles(files:File[]):Promise<ExcelImport> {
   if(!files.length||files.length>30||files.some(f=>!f.name.toLowerCase().endsWith('.xlsx'))||files.reduce((sum,f)=>sum+f.size,0)>10_000_000)throw new Error('Selecciona hasta 30 archivos Excel .xlsx (máximo 10 MB en total).');
   const {default:readXlsx}=await import('read-excel-file/browser');
@@ -87,7 +87,7 @@ export function mergeExcel(data:Data,incoming:ExcelImport,choices:Record<string,
   }
   const existing=data.excel??emptyExcel();
   const unique=<T,>(values:T[],key:(v:T)=>string)=>[...new Map(values.map(v=>[key(v),v])).values()];
-  const excel:ExcelArchive={version:1,sources:unique([...existing.sources,...incoming.archive.sources],s=>s.id),days:unique([...existing.days,...incoming.archive.days],d=>d.id),weeks:unique([...existing.weeks,...incoming.archive.weeks],w=>`${w.sourceId}:${w.block}:${w.week}`),notes:unique([...existing.notes,...incoming.archive.notes],n=>`${n.sourceId}:${n.sheet}:${n.week}:${n.category}`),issues:[...new Set([...existing.issues,...incoming.archive.issues])],prescriptions:unique([...(existing.prescriptions??[]),...(incoming.archive.prescriptions??[])],p=>`${p.sourceId}:${p.week}:${p.day}:${p.name}`)};
+  const excel:ExcelArchive={version:1,prescriptionVersion:2,sources:unique([...existing.sources,...incoming.archive.sources],s=>s.id),days:unique([...existing.days,...incoming.archive.days],d=>d.id),weeks:unique([...existing.weeks,...incoming.archive.weeks],w=>`${w.sourceId}:${w.block}:${w.week}`),notes:unique([...existing.notes,...incoming.archive.notes],n=>`${n.sourceId}:${n.sheet}:${n.week}:${n.category}`),issues:[...new Set([...existing.issues,...incoming.archive.issues])],prescriptions:unique([...(existing.prescriptions??[]),...(incoming.archive.prescriptions??[])],p=>`${p.sourceId}:${p.week}:${p.day}:${p.name}`)};
   validateExcel(excel);
   let calendar=data.calendar;
   if(useCalendar){
@@ -126,7 +126,8 @@ export function validateExcel(value:unknown):ExcelArchive{
 
 // Upgrade previously imported originals locally, without requiring another upload.
 export async function ensurePrescriptions(data:Data):Promise<Data>{
-  if(!data.excel||data.excel.prescriptions!==undefined)return data;
+  if(!data.excel||(data.excel.prescriptionVersion===2&&data.excel.prescriptions!==undefined))return data;
+  if(!data.excel.sources.length)return data;
   const {default:readXlsx}=await import('read-excel-file/browser');
   const prescriptions:Prescription[]=[];
   for(const source of data.excel.sources){
@@ -134,5 +135,5 @@ export async function ensurePrescriptions(data:Data):Promise<Data>{
     const sheets=await readXlsx(new Blob([bytes]));
     prescriptions.push(...readPrescriptions(sheets as {sheet:string;data:unknown[][]}[],source.id,source.block));
   }
-  const excel={...data.excel,prescriptions};validateExcel(excel);return {...data,excel};
+  const excel={...data.excel,prescriptions,prescriptionVersion:2};validateExcel(excel);return {...data,excel};
 }

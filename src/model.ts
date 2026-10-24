@@ -9,7 +9,7 @@ export type SetRecord = { id: string; goal: string; targetRir: number; done: boo
 export type Exercise = { id: string; name: string; unilateral: boolean; loadLabel: string; equipment: string; notes: string; sets: SetRecord[]; linear?:boolean; prescription?:string };
 export type Session = { id: string; block: number; week: number; day: Day; date: string; createdAt: string; finished: boolean; exercises: Exercise[]; startedAt?:string; endedAt?:string; restStartedAt?:string; cardio?:boolean; planSource?:string; prefillVersion?:number };
 export type BodyWeight = { id: string; date: string; kg: number; note: string };
-export type Data = { version: 1; sessions: Session[]; weights: BodyWeight[]; history?: HistoryArchive; calendar?: CalendarConfig; excel?: ExcelArchive; excelCalendar?: boolean };
+export type Data = { version: 1; sessions: Session[]; weights: BodyWeight[]; history?: HistoryArchive; calendar?: CalendarConfig; excel?: ExcelArchive; excelCalendar?: boolean; exerciseNotes?: Record<string,string> };
 type Template = [string, string[], boolean?, string?];
 const dumbbell = 'kg por mancuerna';
 const machine = 'kg indicados en la máquina';
@@ -158,6 +158,7 @@ export function parseBackup(text: string): Data {
       for(const set of e.sets)if(set.previous!==undefined&&(!set.previous||!res(set.previous.left)||!res(set.previous.right)||typeof set.previous.split!=='boolean'||!str(set.previous.label)))fail();
     }
   }
+  if(d.exerciseNotes!==undefined&&(!d.exerciseNotes||typeof d.exerciseNotes!=='object'||Array.isArray(d.exerciseNotes)||Object.keys(d.exerciseNotes).length>10000||Object.entries(d.exerciseNotes).some(([key,value])=>!str(key)||!str(value))))fail();
   if (d.history !== undefined) d.history = parseHistory(d.history);
   if (d.calendar !== undefined) {
     const c = d.calendar;

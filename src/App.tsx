@@ -1,5 +1,5 @@
 import { ensurePrescriptions } from './excel';
-import { plannedBlock, prepareExistingSession, propagateWeight, elapsedSeconds, clockLabel } from './training';
+import { trainingName, plannedBlock, prepareExistingSession, propagateWeight, elapsedSeconds, clockLabel } from './training';
 import { ExcelImporter } from './ExcelImporter';
 import { trainingPositions } from './completed';
 import { applyUpdate, checkUpdate, updateWaiting } from './updates';
@@ -49,14 +49,15 @@ function ExerciseCard({ exercise, index, session, data, update }: { exercise: Ex
   };
   return <article className="exercise-card">
     <div className="exercise-heading"><span className="exercise-number">{String(index + 1).padStart(2, '0')}</span><div className="exercise-title"><h3>{exercise.name}</h3><p>{exercise.loadLabel}{exercise.unilateral && ' · por lado'}</p></div><button className={`icon-button ${open ? 'active' : ''}`} aria-label={`Notas y equipo de ${exercise.name}`} aria-expanded={open} onClick={() => setOpen(!open)}><ChevronDown size={18} /></button></div>
-    {open && <div className="exercise-details"><label>Máquina / equipo<input placeholder="Identifica la máquina para comparar sesiones" value={exercise.equipment} onChange={e => update({ ...exercise, equipment: e.target.value })} /></label><label>Notas y ajustes<textarea placeholder="Técnica, posición del banco, recordatorios…" value={exercise.notes} onChange={e => update({ ...exercise, notes: e.target.value })} /></label><label>Cómo anotas la carga<select value={exercise.loadLabel} onChange={e => update({ ...exercise, loadLabel: e.target.value })}>{[...new Set([exercise.loadLabel, 'kg por mancuerna', 'kg totales, incluida la barra', 'kg añadidos', 'kg indicados en la máquina', 'kg de lastre (opcional)'])].map(v => <option key={v}>{v}</option>)}</select></label></div>}
+    {open && <div className="exercise-details"><label>Máquina / equipo<input placeholder="Identifica la máquina para comparar sesiones" value={exercise.equipment} onChange={e => update({ ...exercise, equipment: e.target.value })} /></label><label>Cómo anotas la carga<select value={exercise.loadLabel} onChange={e => update({ ...exercise, loadLabel: e.target.value })}>{[...new Set([exercise.loadLabel, 'kg por mancuerna', 'kg totales, incluida la barra', 'kg añadidos', 'kg indicados en la máquina', 'kg de lastre (opcional)'])].map(v => <option key={v}>{v}</option>)}</select></label></div>}
+    <div className="exercise-details exercise-notes"><label>Notas y ajustes<textarea placeholder="Técnica, posición del banco, recordatorios…" value={exercise.notes} onChange={e => update({ ...exercise, notes: e.target.value })} /></label></div>
     {exercise.prescription && <p className="small-note">Excel · {exercise.prescription}</p>}
     {exercise.sets.map((set, i) => <div key={set.id} className={`set-row ${set.done ? 'done' : ''}`}>
       <div className="set-meta"><span>Serie {i + 1}</span><span className="goal">Objetivo <strong>{set.goal}</strong> · RIR {set.targetRir}</span>{exercise.unilateral && <label className="checkbox split"><input type="checkbox" checked={set.split} onChange={e => setUpdate({ ...set, split: e.target.checked, done: false, right: e.target.checked ? { ...set.left } : set.right })} /> Diferenciar lados</label>}</div>
       <div className="set-entry"><div className="results"><ResultFields prefix={`${exercise.name} serie ${i + 1}`} side={exercise.unilateral ? (set.split ? 'Izquierda' : 'Ambos lados') : undefined} value={set.left} onChange={r => setResult(set, 'left', r)} />{set.split && <ResultFields prefix={`${exercise.name} serie ${i + 1}`} side="Derecha" value={set.right} onChange={r => setResult(set, 'right', r)} />}</div><button className={`set-check ${set.done ? 'checked' : ''}`} aria-label={`${set.done ? 'Desmarcar' : 'Completar'} ${exercise.name} serie ${i + 1}`} aria-pressed={set.done} onClick={() => complete(set)}><Check size={20} /></button></div>
     </div>)}
     {error && <p className="inline-error" role="alert">{error}</p>}
-    <button className="add-set" onClick={() => setOpen(true)}><Plus size={15} /> Añadir comentario</button>
+    <button className="add-set" onClick={event => event.currentTarget.closest('.exercise-card')?.querySelector('textarea')?.focus()}><Plus size={15} /> Añadir comentario</button>
   </article>;
 }
 export default function App() {
@@ -127,7 +128,11 @@ export default function App() {
   const sessions = [...data.sessions].sort((a,b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
   const weights = [...data.weights].sort((a,b) => b.date.localeCompare(a.date));
   const lastWeight = weights[0];
-  const updateSession = (s: Session) => commit({ ...data, sessions: data.sessions.map(old => old.id === s.id ? s : old) });
+  const updateSession = (s: Session) => {
+    const old=data.sessions.find(old=>old.id===s.id),exerciseNotes={...data.exerciseNotes};
+    for(const e of s.exercises)if(old?.exercises.find(previous=>previous.id===e.id)?.notes!==e.notes)exerciseNotes[trainingName(e.name,s.day)]=e.notes;
+    commit({ ...data, exerciseNotes, sessions: data.sessions.map(old => old.id === s.id ? s : old) });
+  };
   const startSession = () => {
     if (!Number.isInteger(block) || block < 1 || !Number.isInteger(week) || week < 1 || !date) { setToast('Indica un bloque, una semana y una fecha válidos.'); return; }
     const existing = data.sessions.find(s => s.block === block && s.week === week && s.day === day);
