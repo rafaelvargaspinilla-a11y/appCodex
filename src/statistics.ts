@@ -1,4 +1,4 @@
-import { today } from './model';
+import { today, days } from './model';
 import { historyDate, trainingPositions } from './completed';
 import { historicalSessions } from './history';
 import type { Data, Day } from './model';
@@ -199,6 +199,6 @@ export function weeklyImprovements(rows:Performance[],calendar:CalendarConfig,da
     else if(sameLoad&&after.reps>sameLoad.reps)improvements.push({exercise:after.exercise,before:sameLoad,after,weightGain:0,repsGain:after.reps-sameLoad.reps});
   }
   const best=new Map<string,WeeklyImprovement>();
-  for(const gain of improvements.sort((a,b)=>b.weightGain-a.weightGain||b.repsGain-a.repsGain))if(!best.has(gain.exercise))best.set(gain.exercise,gain);
-  return [...best.values()].sort((a,b)=>a.exercise.localeCompare(b.exercise,'es'));
+  for(const gain of improvements.sort((a,b)=>b.weightGain-a.weightGain||b.repsGain-a.repsGain)){const key=`${gain.after.day}:${gain.exercise}`;if(!best.has(key))best.set(key,gain);}
+  return [...best.values()].sort((a,b)=>days.indexOf(a.after.day)-days.indexOf(b.after.day)||rows.findIndex(r=>r.day===a.after.day&&r.exercise===a.exercise)-rows.findIndex(r=>r.day===b.after.day&&r.exercise===b.exercise));
 }

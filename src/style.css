@@ -104,3 +104,7 @@
  .gain-badges { justify-content:flex-start; }
  .history-performance summary { flex-wrap:wrap; }
 }
+
+.gains-day { margin-top:24px; }
+.gains-day > h3 { color:var(--lime); font-size:13px; }
+.gains-day .gains-list { margin-top:10px; }

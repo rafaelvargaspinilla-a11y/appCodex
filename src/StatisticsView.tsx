@@ -1,7 +1,7 @@
 import {useMemo,useState} from 'react';
 import {type Data} from './model';
 import {resolvedCalendar,extractStatistics,performanceDate,record,weeklyImprovements,weekRange,monday,type Performance} from './statistics';
-import {today} from './model';
+import {today,days} from './model';
 const n=(v:number)=>v.toLocaleString('es-ES',{maximumFractionDigits:2});
 const result=(r:Performance)=>`${r.weight===null?'—':n(r.weight)} ${r.unit} × ${r.reps}`;
 const position=(r:Performance)=>`B${r.block} · S${r.week} · ${r.day}`;
@@ -19,7 +19,7 @@ export function StatisticsView({data}:{data:Data}){
  const history=[...new Map(rows.map(r=>[`${r.block}:${r.week}:${r.day}:${r.group}:${r.weight}`,r])).keys()].map(key=>record(rows.filter(r=>`${r.block}:${r.week}:${r.day}:${r.group}:${r.weight}`===key))!);
  return <div className="statistics-view simple-progress">
   <section className="panel weekly-gains"><p className="eyebrow">ESTA SEMANA</p><h2>Te has superado</h2><p className="small-note">{weekRange(monday(today()))} · frente a la semana anterior</p>
-   {gains.length?<ul className="gains-list">{gains.map(g=><li key={g.exercise}><div><strong>{g.exercise}</strong><small>{result(g.before)} → {result(g.after)} · día {g.after.day}</small></div><div className="gain-badges">{g.weightGain>0&&<span>+{n(g.weightGain)} {g.after.unit}</span>}{g.repsGain>0&&<span>+{g.repsGain} reps</span>}</div></li>)}</ul>:<p className="muted gains-empty">Todavía no hay mejoras comparables esta semana.</p>}
+   {gains.length?days.filter(day=>gains.some(g=>g.after.day===day)).map(day=><div className="gains-day" key={day}><h3>{day==='Brazos'?'Brazos':`Día ${day}`}</h3><ul className="gains-list">{gains.filter(g=>g.after.day===day).map(g=><li key={g.exercise}><div><strong>{g.exercise}</strong><small>{result(g.before)} → {result(g.after)}</small></div><div className="gain-badges">{g.weightGain>0&&<span>+{n(g.weightGain)} {g.after.unit}</span>}{g.repsGain>0&&<span>+{g.repsGain} reps</span>}</div></li>)}</ul></div>):<p className="muted gains-empty">Todavía no hay mejoras comparables esta semana.</p>}
   </section>
   <section className="panel exercise-history"><h2>Consulta por ejercicio</h2>
    {!names.length?<p className="muted">Completa series o importa tu histórico para consultar tu evolución.</p>:<>

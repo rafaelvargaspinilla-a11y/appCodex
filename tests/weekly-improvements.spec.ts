@@ -10,9 +10,11 @@ test('Progreso muestra solo mejoras semanales y consulta por ejercicio',async({p
  await page.clock.install({time:new Date('2026-10-25T12:00:00Z')});await page.goto('./');
  const menu=(name:string)=>page.locator('.sidebar:visible nav,.mobile-nav:visible').getByRole('button',{name,exact:true});
  await menu('Mis datos').click();
- const history={format:'beast-log-history',version:1,files:[{name:'gym.txt',text:'Bloque 7\nSemana 6\nDia A\n1. Elevaciones laterales -> 16kg 8(+0)\n2. Remo con mancuerna -> 30kg 8(+0)\nSemana 7\nDia A\n1. Elevaciones laterales -> 16kg 10(+0)\n2. Remo con mancuerna -> 30kg 8(+0)'}]};
+ const text=[6,7].map(week=>`Semana ${week}\n`+['Dia A','Dia B','Dia C','Brazos'].map(day=>`${day}\n1. Elevaciones laterales -> 16kg ${week===6?8:10}(+0)\n2. Remo con mancuerna -> 30kg 8(+0)`).join('\n')).join('\n');
+ const history={format:'beast-log-history',version:1,files:[{name:'gym.txt',text:`Bloque 7\n${text}`} ]};
  await page.getByTestId('history-file').setInputFiles({name:'gym.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(history))});await menu('Progreso').click();
- await expect(page.locator('.gains-list li')).toHaveCount(1);await expect(page.locator('.gains-list')).toContainText('Elevaciones laterales');await expect(page.locator('.gains-list')).toContainText('+2 reps');await expect(page.locator('.gains-list')).not.toContainText('Remo');
+ await expect(page.locator('.gains-list li')).toHaveCount(4);await expect(page.locator('.weekly-gains')).toContainText('Elevaciones laterales');await expect(page.locator('.weekly-gains')).toContainText('+2 reps');await expect(page.locator('.weekly-gains')).not.toContainText('Remo');
+ await expect(page.locator('.gains-day > h3')).toHaveText(['Día A','Día B','Día C','Brazos']);
  await expect(page.locator('.statistics-view > section')).toHaveCount(2);
- await page.getByLabel('Ejercicio',{exact:true}).selectOption('Remo con mancuerna');await expect(page.locator('.history-performance')).toHaveCount(2);
+ await page.getByLabel('Ejercicio',{exact:true}).selectOption('Remo con mancuerna');await expect(page.locator('.history-performance')).toHaveCount(8);
 });
