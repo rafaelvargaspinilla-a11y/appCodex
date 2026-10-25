@@ -1,4 +1,4 @@
-import { newSet, type Data, type Day, type Exercise, type Result, type Session } from './model';
+import { createSession, type Data, type Day, type Exercise, type Result, type Session } from './model';
 import { canonical } from './statistics';
 import { historicalSessions } from './history';
 import { historicalResults, type PreviousSet } from './previousResults';
@@ -96,25 +96,40 @@ export function prefillSession(data:Data,session:Session):void{
 function compatibleLoad(previous:string,current:string):boolean{return previous===current||/kg (?:por mancuerna|de la mancuerna)/.test(previous)&&/kg (?:por mancuerna|de la mancuerna)/.test(current);}
 export function prepareExistingSession(data:Data,session:Session):Session{
   if(session.finished)return session;
-  const plans=data.excel?.prescriptions?.filter(p=>p.block===session.block&&p.week===session.week&&p.day===session.day)??[];
-  const needsPlan=plans.some(p=>{const e=session.exercises.find(e=>trainingName(e.name,session.day)===trainingName(p.name,session.day));return e&&(e.sets.length<p.goals.length||e.prescription!==`${p.series} series · RIR ${p.rir||'sin indicar'}`);});
-  if(session.prefillVersion===3&&!needsPlan)return session;
   const next=structuredClone(session);
-  for(const e of next.exercises)if(/overhead/i.test(e.name)){
-    e.unilateral=false;e.loadLabel='kg de la mancuerna';
-    for(const set of e.sets)if(!set.done)set.split=false;
+  if(session.prefillVersion!==3){
+    for(const e of next.exercises)if(/overhead/i.test(e.name)){
+      e.unilateral=false;e.loadLabel='kg de la mancuerna';
+      for(const set of e.sets)if(!set.done)set.split=false;
+    }
+    prefillSession(data,next);
   }
-  for(const p of plans){
-    const e=next.exercises.find(e=>trainingName(e.name,next.day)===trainingName(p.name,next.day));if(!e)continue;
-    e.prescription=`${p.series} series · RIR ${p.rir||'sin indicar'}`;e.linear=p.linear;
-    p.goals.forEach((goal,i)=>{
-      const rir=Number(p.rir.match(/^\d+/)?.[0]??0);
-      if(!e.sets[i])e.sets.push(newSet(goal,null,rir));
-      else if(!e.sets[i].done){e.sets[i].goal=goal;e.sets[i].targetRir=rir;}
+  const expected=createSession(session.block,session.week,session.day,session.date,data);
+  if(expected.planSource){
+    next.planSource=expected.planSource;
+    const used=new Set<string>();
+    next.exercises=expected.exercises.map(planned=>{
+      const old=next.exercises.find(e=>!used.has(e.id)&&trainingName(e.name,next.day)===trainingName(planned.name,next.day));
+      if(!old)return {...planned,id:crypto.randomUUID()};
+      used.add(old.id);
+      const sets=planned.sets.map((set,i)=>old.sets[i]?(old.sets[i].done?old.sets[i]:{...old.sets[i],goal:set.goal,targetRir:set.targetRir}):set);
+      // Keep actual work or manual edits outside the plan; discard only unused automatic fields.
+      sets.push(...old.sets.slice(planned.sets.length).filter(hasWork));
+      const extra=sets.length-planned.sets.length;
+      return {...old,linear:planned.linear,prescription:`${planned.prescription}${extra?` · ${extra} series adicionales conservadas con datos`:''}`,sets};
     });
+    next.exercises.push(...session.exercises.filter(e=>!used.has(e.id)&&!expected.exercises.some(p=>trainingName(p.name,next.day)===trainingName(e.name,next.day))&&(e.sets.some(hasWork)||e.notes||e.equipment)).map(e=>({...e,prescription:'Fuera del plan actual · conservado porque contiene datos'})));
   }
-  prefillSession(data,next);return next;
+  if(!expected.planSource)delete next.planSource;
+  return JSON.stringify(next)===JSON.stringify(session)?session:next;
 }
+function hasWork(set:Exercise['sets'][number]):boolean{
+  if(set.done)return true;
+  const same=(a:Result,b:Result)=>JSON.stringify(a)===JSON.stringify(b);
+  if(set.previous)return !same(set.left,set.previous.left)||!same(set.right,set.previous.right)||set.split!==set.previous.split;
+  return [set.left,set.right].some(r=>r.weight!==null||r.reps!==null||r.rir!==''||r.failure||r.partials!==null);
+}
+
 export function propagateWeight(exercise:Exercise,setId:string,side:'left'|'right',value:Result):Exercise{
   const first=exercise.sets[0];
   const linear=exercise.linear??exercise.sets.every(s=>s.goal===first.goal);

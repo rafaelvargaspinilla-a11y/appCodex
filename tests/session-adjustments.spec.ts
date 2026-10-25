@@ -15,9 +15,9 @@ test('C semana 6 actualiza series de una sesión pendiente y conserva resultados
  data.excel={version:1,sources:[],days:[],weeks:[],notes:[],issues:[],prescriptions:plans};
  const prepared=prepareExistingSession(data,session);
  expect(plans.find(p=>p.week===5)!.goals).toHaveLength(2);
- expect(prepared.exercises[5].sets).toHaveLength(3);expect(prepared.exercises[6].sets).toHaveLength(3);
- expect(prepared.exercises[5].sets[0]).toEqual(first.sets[0]);expect(prepared.exercises[5].sets[1].left.weight).toBe(35);
- expect(prepared.exercises[5].notes).toBe('Ajuste guardado');expect(prepared.startedAt).toBe(session.startedAt);
+ expect(prepared.exercises.find(e=>e.name===first.name)!.sets).toHaveLength(3);expect(prepared.exercises.find(e=>/polea trasera/.test(e.name))!.sets).toHaveLength(3);
+ expect(prepared.exercises.find(e=>e.name===first.name)!.sets[0]).toEqual(first.sets[0]);expect(prepared.exercises.find(e=>e.name===first.name)!.sets[1].left.weight).toBe(35);
+ expect(prepared.exercises.find(e=>e.name===first.name)!.notes).toBe('Ajuste guardado');expect(prepared.startedAt).toBe(session.startedAt);
  expect(prepareExistingSession(data,prepared)).toBe(prepared);
  expect(prepareExistingSession(data,{...session,finished:true}).exercises[5].sets).toHaveLength(2);
 });
