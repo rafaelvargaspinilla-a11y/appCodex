@@ -55,54 +55,17 @@ test('excluye copia de búlgara y barra rara; no infiere una carga incompleta',(
   expect(result.performances.filter(r=>r.exercise==='Curl femoral sentado').map(r=>r.reps)).toEqual([12]);
 });
 
-test('muestra marcas, evolución y constancia y guarda el calendario en las copias',async({page})=>{
-  await page.goto('./');
-  await menu(page,'Mis datos').click();
-  const data=dataWith('Bloque 7\nSemana 4\nDia A\n1. Remo con mancuerna -> 30kg 8(+0)\nSemana 5\nDia B\n1. Remo con mancuerna -> 32kg 6(+1)');
-  await page.getByTestId('history-file').setInputFiles({name:'history.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(data.history))});
-  await menu(page,'Progreso').click();
-  await expect(page.getByRole('heading',{name:'Tus marcas. Tu evolución.'})).toBeVisible();
-  await expect(page.locator('.stats-cards').first()).toContainText('32 kg × 6');
-  await expect(page.getByRole('heading',{name:'Constancia en entrenos'})).toBeVisible();
-  await expect(page.locator('.attendance-week.level-0')).toHaveCount(3);
-  await page.getByLabel('Fecha dentro de la semana de referencia').fill('2026-10-15');
-  await page.getByRole('button',{name:'Guardar calendario'}).click();
-  await expect(page.getByRole('status')).toContainText('Guardado en este dispositivo');
-  await page.reload();await menu(page,'Progreso').click();
-  await expect(page.getByLabel('Fecha dentro de la semana de referencia')).toHaveValue('2026-10-12');
-  const select=page.getByLabel('Consultar punto').first();
-  await select.selectOption({index:0});
-  await expect(page.locator('.stat-chart').first()).toContainText('30 kg × 8');
-  await menu(page,'Mis datos').click();
-  const waiting=page.waitForEvent('download');await page.getByRole('button',{name:'Exportar mis datos'}).click();
-  const path=await(await waiting).path();await page.getByTestId('backup-file').setInputFiles(path!);
-  await page.getByRole('button',{name:'Guardar copia y restaurar'}).click();
-  await expect(page.getByRole('alert')).toContainText('Copia restaurada');
-  await menu(page,'Progreso').click();await expect(page.getByLabel('Fecha dentro de la semana de referencia')).toHaveValue('2026-10-12');
-  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
-});
-
-test('vista general combina bloques y permite filtrar sin mezclar unidades ni unir equipos',async({page})=>{
-  await page.goto('./');await menu(page,'Mis datos').click();
-  const archive={format:'beast-log-history',version:1,files:[
-    {name:'block1.txt',text:'Bloque 1\nSemana 1\nDia A\n1. Femoral sentado -> 20kg 10(+0)\n2. Jalón unilateral -> 30lbs 8(+0)'},
-    {name:'block7.txt',text:'Bloque 7\nSemana 5\nDia A\n1. Femoral sentado -> 30kg 8(+0)\n2. Jalón unilateral -> 25kg 8(+0)'}
-  ]};
-  await page.getByTestId('history-file').setInputFiles({name:'all.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(archive))});
-  await menu(page,'Progreso').click();await page.getByLabel('Ejercicio',{exact:true}).selectOption('Curl femoral sentado');
-  await expect(page.getByLabel('Periodo',{exact:true})).toHaveValue('');
-  await expect(page.locator('.stats-cards').first()).toContainText('30 kg × 8');
-  await expect(page.locator('.stat-chart').first().locator('circle')).toHaveCount(2);
-  await expect(page.locator('.stat-chart').first().locator('polyline')).toHaveCount(2);
-  await expect(page.getByRole('heading',{name:'Marcas de todo tu historial'})).toBeVisible();
-  await page.getByLabel('Periodo',{exact:true}).selectOption('1');
-  await expect(page.locator('.stats-cards').first()).toContainText('20 kg × 10');
-  await expect(page.locator('.stat-chart').first().locator('circle')).toHaveCount(1);
-  await page.getByLabel('Periodo',{exact:true}).selectOption('');
-  await page.getByLabel('Ejercicio',{exact:true}).selectOption('Jalón unilateral');
-  const selector=page.getByLabel('Variante, equipo y unidad',{exact:true});
-  const generalOptions=await selector.locator('option').allTextContents();
-  expect(generalOptions.filter(t=>t.includes('General')).length).toBe(2);
-  await expect(page.locator('.stat-chart').first().locator('circle')).toHaveCount(1);
-  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+test('consulta histórica general se filtra por ejercicio, bloque y unidad',async({page})=>{
+ await page.goto('./');await menu(page,'Mis datos').click();
+ const archive={format:'beast-log-history',version:1,files:[
+ {name:'one.txt',text:'Bloque 1\nSemana 1\nDia A\n1. Femoral sentado -> 20kg 10(+0)\n2. Jalón unilateral -> 30lbs 8(+0)'},
+ {name:'seven.txt',text:'Bloque 7\nSemana 5\nDia A\n1. Femoral sentado -> 30kg 8(+0)\n2. Jalón unilateral -> 25kg 8(+0)'}]};
+ await page.getByTestId('history-file').setInputFiles({name:'all.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(archive))});await menu(page,'Progreso').click();
+ await expect(page.locator('.statistics-view > section')).toHaveCount(2);
+ await expect(page.getByRole('heading',{name:'Constancia en entrenos'})).toHaveCount(0);await expect(page.getByRole('heading',{name:'Calendario del histórico'})).toHaveCount(0);
+ await page.getByLabel('Ejercicio',{exact:true}).selectOption('Curl femoral sentado');await expect(page.locator('.exercise-timeline')).toContainText('20 kg × 10');await expect(page.locator('.exercise-timeline')).toContainText('30 kg × 8');
+ await page.getByText('Filtrar consulta',{exact:true}).click();await page.getByLabel('Periodo',{exact:true}).selectOption('1');await expect(page.locator('.history-performance')).toHaveCount(1);await expect(page.locator('.exercise-timeline')).not.toContainText('30 kg × 8');
+ await page.getByLabel('Ejercicio',{exact:true}).selectOption('Jalón unilateral');await expect(page.locator('.history-performance')).toHaveCount(2);
+ const variants=page.getByLabel('Variante, equipo y unidad',{exact:true});const kg=await variants.locator('option').evaluateAll(options=>options.find(o=>o.textContent?.endsWith(' · kg'))?.value);
+ await variants.selectOption(kg!);await expect(page.locator('.history-performance')).toHaveCount(1);await expect(page.locator('.exercise-timeline')).toContainText('25 kg');
 });
