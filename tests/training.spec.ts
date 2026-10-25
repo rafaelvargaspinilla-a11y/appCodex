@@ -13,7 +13,7 @@ test('precarga por serie; propaga cargas lineales; comentarios, cardio y relojes
  await weight(1).fill('16');await expect(weight(2)).toHaveValue('16');
  for(const [i,reps] of [[1,10],[2,8]]){await first.getByRole('spinbutton',{name:`Elevaciones laterales serie ${i}  repeticiones`,exact:true}).fill(String(reps));await first.getByRole('button',{name:`Completar Elevaciones laterales serie ${i}`,exact:true}).click();}
  await second.getByRole('spinbutton',{name:'Press inclinado con mancuernas serie 1  carga',exact:true}).fill('30');await expect(second.getByRole('spinbutton',{name:'Press inclinado con mancuernas serie 2  carga',exact:true})).toHaveValue('');
- await first.getByRole('button',{name:'Añadir comentario',exact:true}).click();await first.getByLabel('Notas y ajustes').fill('Banco 2');await expect(first.locator('.set-row')).toHaveCount(2);await expect(page.getByRole('button',{name:'Añadir serie',exact:true})).toHaveCount(0);
+ await expect(first.getByLabel('Notas y ajustes')).toBeVisible();await expect(first.getByRole('button',{name:'Añadir comentario',exact:true})).toHaveCount(0);await first.getByLabel('Notas y ajustes').fill('Banco 2');await expect(first.locator('.set-row')).toHaveCount(2);await expect(page.getByRole('button',{name:'Añadir serie',exact:true})).toHaveCount(0);
  await page.getByLabel('He hecho cardio al final del entrenamiento').check();await saved(page);
  const started=(await dump(page)).sessions[0].startedAt;
  await page.clock.fastForward(61000);await expect(page.getByTestId('rest-clock')).toHaveText('01:01');await expect(page.getByTestId('session-duration')).toHaveText('01:01');

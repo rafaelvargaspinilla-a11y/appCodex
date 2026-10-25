@@ -8,7 +8,7 @@ import { resolvedCalendar } from './statistics';
 import { ArchiveView } from './HistoryArchive';
 import { historicalSessions, mergeHistory, parseHistory } from './history';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Dumbbell, LayoutDashboard, History, Scale, Settings, ArrowUpRight, ArrowLeft, ArrowRight, Plus, Check, ChevronDown, Download, Upload, WifiOff, ShieldCheck, X, CheckCircle2, Circle } from 'lucide-react';
+import { Dumbbell, LayoutDashboard, History, Scale, Settings, ArrowUpRight, ArrowLeft, ArrowRight, Check, ChevronDown, Download, Upload, WifiOff, ShieldCheck, X, CheckCircle2, Circle } from 'lucide-react';
 import { createSession, suggestedSession, days, today, completedSets, totalSets, validResult, parseBackup, type Data, type Day, type Exercise, type Result, type Session, type SetRecord } from './model';
 import { readData, writeData } from './storage';
 
@@ -57,7 +57,6 @@ function ExerciseCard({ exercise, index, session, data, update }: { exercise: Ex
       <div className="set-entry"><div className="results"><ResultFields prefix={`${exercise.name} serie ${i + 1}`} side={exercise.unilateral ? (set.split ? 'Izquierda' : 'Ambos lados') : undefined} value={set.left} onChange={r => setResult(set, 'left', r)} />{set.split && <ResultFields prefix={`${exercise.name} serie ${i + 1}`} side="Derecha" value={set.right} onChange={r => setResult(set, 'right', r)} />}</div><button className={`set-check ${set.done ? 'checked' : ''}`} aria-label={`${set.done ? 'Desmarcar' : 'Completar'} ${exercise.name} serie ${i + 1}`} aria-pressed={set.done} onClick={() => complete(set)}><Check size={20} /></button></div>
     </div>)}
     {error && <p className="inline-error" role="alert">{error}</p>}
-    <button className="add-set" onClick={event => event.currentTarget.closest('.exercise-card')?.querySelector('textarea')?.focus()}><Plus size={15} /> Añadir comentario</button>
   </article>;
 }
 export default function App() {
