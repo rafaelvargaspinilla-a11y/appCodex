@@ -195,7 +195,7 @@ export function weeklyImprovements(rows:Performance[],calendar:CalendarConfig,da
     const comparable=prior.filter(r=>r.group===after.group&&r.day===after.day&&r.unit===after.unit&&r.convention===after.convention);
     const heaviest=record(comparable);if(!heaviest)continue;
     const sameLoad=record(comparable.filter(r=>r.weight===after.weight));
-    if(after.weight!>heaviest.weight!&&after.reps>=heaviest.reps)improvements.push({exercise:after.exercise,before:heaviest,after,weightGain:after.weight!-heaviest.weight!,repsGain:after.reps-heaviest.reps});
+    if(after.weight!>heaviest.weight!)improvements.push({exercise:after.exercise,before:heaviest,after,weightGain:after.weight!-heaviest.weight!,repsGain:Math.max(0,after.reps-heaviest.reps)});
     else if(sameLoad&&after.reps>sameLoad.reps)improvements.push({exercise:after.exercise,before:sameLoad,after,weightGain:0,repsGain:after.reps-sameLoad.reps});
   }
   const best=new Map<string,WeeklyImprovement>();
